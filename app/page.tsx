@@ -14,6 +14,9 @@ export default function HomePage() {
           <Link href="/demo" className="hover:text-slate-100">
             Demo
           </Link>
+          <Link href="/lab" className="hover:text-slate-100">
+            Agent Lab
+          </Link>
           <a href="#architecture" className="hover:text-slate-100">
             Architecture
           </a>
@@ -37,12 +40,18 @@ export default function HomePage() {
           >
             Try Demo
           </Link>
-          <a
-            href="#architecture"
-            className="rounded border border-slate-600 px-5 py-3 text-sm font-medium text-slate-200 transition hover:border-slate-400"
-          >
-            View Architecture
-          </a>
+            <Link
+              href="/lab"
+              className="rounded border border-slate-600 px-5 py-3 text-sm font-medium text-slate-200 transition hover:border-slate-400"
+            >
+              Agent Lab
+            </Link>
+            <a
+              href="#architecture"
+              className="rounded border border-slate-600 px-5 py-3 text-sm font-medium text-slate-200 transition hover:border-slate-400"
+            >
+              View Architecture
+            </a>
         </div>
         <p className="mt-8 max-w-lg text-sm text-slate-500">
           AgentProof does not claim to be AI-proof. It measures interaction risk

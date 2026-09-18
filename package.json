@@ -12,7 +12,9 @@
     "test:e2e": "playwright test",
     "test:redteam": "vitest run --config vitest.redteam.config.ts; playwright test -c playwright.redteam.config.ts",
     "attack:matrix": "node scripts/attacks/run-attack-matrix.mjs",
-    "attack:retest": "node scripts/attacks/run-phase3-retest.mjs"
+    "attack:retest": "node scripts/attacks/run-phase3-retest.mjs",
+    "lab:l1": "node scripts/lab/run-l1.mjs",
+    "lab:l2": "node scripts/lab/run-l2.mjs"
   },
   "dependencies": {
     "next": "16.3.5",

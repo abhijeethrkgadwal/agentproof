@@ -122,14 +122,19 @@ Open [http://127.0.0.1:43123](http://127.0.0.1:43123).
 
 Health: `GET /api/health` → `{ "status": "ok", "service": "agentproof" }`.
 
-## Test commands
+## Agent Lab (Phase 4)
+
+Measure automation cost without changing the Phase 3 protocol:
 
 ```bash
-npm test           # Vitest unit/integration
-npm run test:e2e   # Playwright end-to-end
-npm run lint
-npm run build
+npm run lab:l1 -- http://127.0.0.1:43123 5
+npm run lab:l2
+# Dashboard
+open http://127.0.0.1:43123/lab
 ```
+
+Automation Cost = `timeToSolveMs/1000 + 0.5*actions + 0.1*framesObserved`.
+
 
 ## Environment
 
