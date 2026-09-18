@@ -1,57 +1,16 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import type {
-  RenderObject,
-  TemporalRenderConfiguration,
-  Vec2,
-} from "@/lib/challenge/types";
-
-function positionAt(
-  object: RenderObject,
-  elapsedMs: number,
-  width: number,
-  height: number,
-): Vec2 {
-  let x = object.start.x;
-  let y = object.start.y;
-  let t0 = 0;
-
-  for (const segment of object.segments) {
-    const t1 = segment.endMs;
-    const dt = Math.max(0, Math.min(elapsedMs, t1) - t0) / 1000;
-    x += segment.velocity.x * dt;
-    y += segment.velocity.y * dt;
-    t0 = t1;
-    if (elapsedMs <= t1) break;
-  }
-
-  const r = object.size;
-  const bounce = (value: number, min: number, max: number) => {
-    if (max <= min) return min;
-    let v = value;
-    while (v < min || v > max) {
-      if (v < min) v = min + (min - v);
-      if (v > max) v = max - (v - max);
-    }
-    return v;
-  };
-
-  return {
-    x: bounce(x, r, width - r),
-    y: bounce(y, r, height - r),
-  };
-}
+import type { ObjectPose, PublicScene } from "@/lib/challenge/types";
 
 function drawShape(
   ctx: CanvasRenderingContext2D,
-  object: RenderObject,
-  pos: Vec2,
+  pose: ObjectPose,
   selected: boolean,
 ) {
-  const { size, shape, color } = object;
+  const { size, shape, color, x, y } = pose;
   ctx.save();
-  ctx.translate(pos.x, pos.y);
+  ctx.translate(x, y);
   ctx.fillStyle = color;
   ctx.strokeStyle = selected ? "#f8fafc" : "rgba(255,255,255,0.25)";
   ctx.lineWidth = selected ? 3 : 1.5;
@@ -94,34 +53,25 @@ function drawShape(
   ctx.restore();
 }
 
-function hitTest(object: RenderObject, pos: Vec2, point: Vec2): boolean {
-  const dx = point.x - pos.x;
-  const dy = point.y - pos.y;
-  return dx * dx + dy * dy <= (object.size + 4) * (object.size + 4);
-}
-
 export function TemporalChallenge({
-  config,
+  scene,
+  poses,
   selectedObjectId,
   onSelect,
-  onStarted,
+  interactive,
 }: {
-  config: TemporalRenderConfiguration;
+  scene: PublicScene;
+  poses: ObjectPose[];
   selectedObjectId: string | null;
   onSelect: (objectId: string) => void;
-  onStarted: () => void;
+  interactive: boolean;
 }) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const startRef = useRef<number | null>(null);
-  const positionsRef = useRef<Map<string, Vec2>>(new Map());
-  const selectedRef = useRef<string | null>(selectedObjectId);
-  const onStartedRef = useRef(onStarted);
-  const startedRef = useRef(false);
+  const posesRef = useRef(poses);
 
   useEffect(() => {
-    selectedRef.current = selectedObjectId;
-    onStartedRef.current = onStarted;
-  }, [selectedObjectId, onStarted]);
+    posesRef.current = poses;
+  }, [poses]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -129,42 +79,28 @@ export function TemporalChallenge({
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    startRef.current = null;
-    startedRef.current = false;
-
     let frame = 0;
-    const loop = (now: number) => {
-      if (startRef.current === null) {
-        startRef.current = now;
-        if (!startedRef.current) {
-          startedRef.current = true;
-          onStartedRef.current();
-        }
-      }
-      const elapsed = Math.min(config.durationMs * 2, now - startRef.current);
-
-      ctx.clearRect(0, 0, config.width, config.height);
+    const loop = () => {
+      ctx.clearRect(0, 0, scene.width, scene.height);
       ctx.fillStyle = "#0b1220";
-      ctx.fillRect(0, 0, config.width, config.height);
+      ctx.fillRect(0, 0, scene.width, scene.height);
       ctx.strokeStyle = "rgba(148,163,184,0.08)";
       ctx.lineWidth = 1;
-      for (let x = 0; x < config.width; x += 32) {
+      for (let x = 0; x < scene.width; x += 32) {
         ctx.beginPath();
         ctx.moveTo(x, 0);
-        ctx.lineTo(x, config.height);
+        ctx.lineTo(x, scene.height);
         ctx.stroke();
       }
-      for (let y = 0; y < config.height; y += 32) {
+      for (let y = 0; y < scene.height; y += 32) {
         ctx.beginPath();
         ctx.moveTo(0, y);
-        ctx.lineTo(config.width, y);
+        ctx.lineTo(scene.width, y);
         ctx.stroke();
       }
 
-      for (const object of config.objects) {
-        const pos = positionAt(object, elapsed, config.width, config.height);
-        positionsRef.current.set(object.id, pos);
-        drawShape(ctx, object, pos, selectedRef.current === object.id);
+      for (const pose of posesRef.current) {
+        drawShape(ctx, pose, selectedObjectId === pose.id);
       }
 
       frame = requestAnimationFrame(loop);
@@ -172,24 +108,26 @@ export function TemporalChallenge({
 
     frame = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(frame);
-  }, [config]);
+  }, [scene.height, scene.width, selectedObjectId]);
 
   const handlePointer = (clientX: number, clientY: number) => {
+    if (!interactive) return;
     const canvas = canvasRef.current;
     if (!canvas) return;
     const rect = canvas.getBoundingClientRect();
-    const scaleX = config.width / rect.width;
-    const scaleY = config.height / rect.height;
+    const scaleX = scene.width / rect.width;
+    const scaleY = scene.height / rect.height;
     const point = {
       x: (clientX - rect.left) * scaleX,
       y: (clientY - rect.top) * scaleY,
     };
 
-    for (let i = config.objects.length - 1; i >= 0; i -= 1) {
-      const object = config.objects[i]!;
-      const pos = positionsRef.current.get(object.id);
-      if (pos && hitTest(object, pos, point)) {
-        onSelect(object.id);
+    for (let i = posesRef.current.length - 1; i >= 0; i -= 1) {
+      const pose = posesRef.current[i]!;
+      const dx = point.x - pose.x;
+      const dy = point.y - pose.y;
+      if (dx * dx + dy * dy <= (pose.size + 4) * (pose.size + 4)) {
+        onSelect(pose.id);
         return;
       }
     }
@@ -199,8 +137,8 @@ export function TemporalChallenge({
     <div className="space-y-3">
       <canvas
         ref={canvasRef}
-        width={config.width}
-        height={config.height}
+        width={scene.width}
+        height={scene.height}
         className="w-full max-w-full cursor-crosshair rounded-md border border-slate-700/80 shadow-[0_0_0_1px_rgba(15,23,42,0.8)]"
         data-testid="temporal-canvas"
         onClick={(event) => handlePointer(event.clientX, event.clientY)}
@@ -208,7 +146,8 @@ export function TemporalChallenge({
         aria-label="Temporal object tracking challenge canvas"
       />
       <p className="text-xs text-slate-500">
-        Objects animate on canvas. Select the object that matches the instruction, then verify.
+        Poses are revealed progressively from the server during the active window.
+        Watch the scene, then select the matching object.
       </p>
     </div>
   );

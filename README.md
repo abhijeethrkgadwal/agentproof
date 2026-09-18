@@ -13,14 +13,16 @@ Classical CAPTCHAs assume a hard human/AI boundary that is collapsing. Static pu
 ## Architecture
 
 ```text
-Browser (untrusted)          Server (authoritative)
-─────────────────            ──────────────────────
-Render canvas scene   <────  Generate challenge + groundTruth
-Collect telemetry            Sign HMAC token (nonce, expiry)
-POST /api/verify      ────>  Verify signature / expiry / replay
-                             Validate answer vs groundTruth
-                             Score interaction risk
-                      <────  allow | step_up | restrict
+Browser (untrusted)                 Server (authoritative)
+─────────────────                   ──────────────────────
+POST /api/challenge          ────>  Issue scene identity + cookie
+                             <────  (no motion segments)
+POST /api/challenge/start    ────>  lifecycle → active
+POST /api/challenge/frame    ────>  poses @ server elapsed only
+Canvas paints progressive poses
+POST /api/verify             ────>  session + lifecycle + window
+                                    + HMAC/replay + ground truth + risk
+                             <────  allow | step_up | restrict
 ```
 
 | Concern | Location |
@@ -58,13 +60,14 @@ Product thesis (locked): AgentProof does not try to prove that a user is “huma
 
 ## Challenge lifecycle
 
-1. Client `POST /api/challenge` with optional `difficulty` (1–5; UI enables 1–2).
-2. Server creates challenge record (nonce, TTL, render config, **groundTruth**).
-3. Server returns public payload + HMAC token — **never** groundTruth.
-4. Client animates objects on HTML Canvas and records minimal events.
-5. Client `POST /api/verify` with `challengeId`, `token`, `selectedObjectId`, telemetry.
-6. Server validates schema → signature → identity binding → expiry → replay → answer → risk → consume.
-7. Response includes `verified`, `decision`, `riskScore`, `confidence`.
+1. Client `POST /api/challenge` → **issued** scene identity only (no motion segments). Session cookie set.
+2. Client `POST /api/challenge/start` → **active**; server begins wall-clock window.
+3. Client polls `POST /api/challenge/frame` → progressive poses at server elapsed time (no future plan).
+4. After minimum active window, client `POST /api/verify` with selection + cookie + token.
+5. Server checks signature → session → lifecycle → active duration → replay → ground truth → risk → **submitted**.
+
+Phase 2 offline derive-from-segments is broken by design: issued JSON is not a complete solvable motion plan.
+
 
 ## Verification flow
 

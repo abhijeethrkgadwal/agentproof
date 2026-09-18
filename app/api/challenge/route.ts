@@ -4,6 +4,10 @@ import { generateTemporalChallenge } from "@/lib/challenge/generator";
 import { toPublicChallenge } from "@/lib/challenge/public";
 import { signChallengeToken } from "@/lib/security/signing";
 import { checkRateLimit } from "@/lib/security/rateLimit";
+import {
+  createSessionId,
+  sessionCookieHeader,
+} from "@/lib/security/session";
 import { getChallengeStore } from "@/lib/storage/challengeStore";
 
 export const runtime = "nodejs";
@@ -30,15 +34,14 @@ export async function POST(request: Request) {
     });
   }
 
-  const difficulty = parsed.data.difficulty;
-
   try {
     const store = getChallengeStore();
     store.purgeExpired();
 
+    const sessionId = parsed.data.sessionId ?? createSessionId();
     const challenge = generateTemporalChallenge({
-      difficulty,
-      sessionId: parsed.data.sessionId,
+      difficulty: parsed.data.difficulty,
+      sessionId,
     });
 
     store.createChallenge(challenge);
@@ -53,8 +56,9 @@ export async function POST(request: Request) {
       challengeType: challenge.challengeType,
     });
 
-    // Explicitly omit groundTruth from the response (publicChallenge pattern)
-    return jsonOk(toPublicChallenge(challenge, token));
+    const response = jsonOk(toPublicChallenge(challenge, token));
+    response.headers.set("Set-Cookie", sessionCookieHeader(challenge.sessionId));
+    return response;
   } catch (error) {
     const message = error instanceof Error ? error.message : "server_error";
     if (message.includes("AGENTPROOF_SIGNING_SECRET")) {

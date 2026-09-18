@@ -242,6 +242,8 @@ export function generateTemporalChallenge(
     challengeType: "temporal",
     renderConfiguration,
     groundTruth,
+    lifecycle: "issued",
+    framePollCount: 0,
     consumed: false,
     failedAttempts: 0,
   };

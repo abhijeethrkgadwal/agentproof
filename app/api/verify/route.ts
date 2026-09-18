@@ -5,11 +5,17 @@ import { calculateRisk } from "@/lib/risk/score";
 import { ageMs, isExpired } from "@/lib/security/expiry";
 import { checkRateLimit } from "@/lib/security/rateLimit";
 import { assertNotConsumed } from "@/lib/security/replay";
+import { getSessionIdFromRequest } from "@/lib/security/session";
 import { verifyChallengeToken } from "@/lib/security/signing";
 import { getChallengeStore } from "@/lib/storage/challengeStore";
 import { sanitizeTelemetry } from "@/lib/telemetry/sanitize";
 
 export const runtime = "nodejs";
+
+function minActiveMs(durationMs: number): number {
+  const ratio = Number(process.env.AGENTPROOF_MIN_ACTIVE_RATIO ?? "0.85");
+  return Math.floor(durationMs * Math.min(1, Math.max(0.5, ratio)));
+}
 
 export async function POST(request: Request) {
   const rate = checkRateLimit(`verify:${clientKeyFromRequest(request)}`);
@@ -37,6 +43,7 @@ export async function POST(request: Request) {
 
   const { challengeId, token, selectedObjectId } = parsed.data;
   const telemetry = sanitizeTelemetry(parsed.data.telemetry);
+  const sessionCookie = getSessionIdFromRequest(request);
 
   const tokenResult = verifyChallengeToken(token);
   if (!tokenResult.ok) {
@@ -58,6 +65,11 @@ export async function POST(request: Request) {
     return jsonError(401, "invalid_signature");
   }
 
+  const sessionBound = sessionCookie === challenge.sessionId;
+  if (!sessionBound) {
+    return jsonError(403, "session_mismatch");
+  }
+
   if (isExpired(challenge.expiresAt)) {
     return jsonError(410, "challenge_expired");
   }
@@ -67,25 +79,47 @@ export async function POST(request: Request) {
     return jsonError(409, "replay");
   }
 
+  if (challenge.lifecycle === "issued" || !challenge.startedAt) {
+    return jsonError(409, "invalid_lifecycle", {
+      expected: "active",
+      actual: challenge.lifecycle,
+    });
+  }
+
+  if (challenge.lifecycle === "submitted") {
+    return jsonError(409, "replay");
+  }
+
+  const serverActiveMs = Date.now() - new Date(challenge.startedAt).getTime();
+  const requiredActive = minActiveMs(challenge.renderConfiguration.durationMs);
+  if (serverActiveMs < requiredActive) {
+    return jsonError(425, "premature_submit", {
+      serverActiveMs,
+      requiredActiveMs: requiredActive,
+    });
+  }
+
   const answer = validateSelectedObject(challenge, selectedObjectId);
   const failedAttempts = challenge.failedAttempts;
 
+  const riskInputs = {
+    challengeSolved: answer.correct,
+    completionTimeMs: telemetry.completionTimeMs ?? serverActiveMs,
+    failedAttempts: answer.correct ? failedAttempts : failedAttempts + 1,
+    retryCount: telemetry.retryCount ?? 0,
+    interactionEventCount: telemetry.interactionEventCount ?? 0,
+    challengeAgeMs: ageMs(challenge.issuedAt),
+    expectedDurationMs: challenge.renderConfiguration.durationMs,
+    serverActiveMs,
+    framePollCount: challenge.framePollCount,
+    sessionBound,
+  };
+
   if (!answer.correct) {
     store.incrementFailedAttempts(challengeId);
-    // Consume on incorrect answer too? Spec says mark consumed after successful verification.
-    // Incorrect answers should be rejected but challenge may still be usable until success/expiry.
-    // For one-time security, consume on any verify attempt to prevent brute force.
     store.consumeChallenge(challengeId);
 
-    const risk = calculateRisk({
-      challengeSolved: false,
-      completionTimeMs: telemetry.completionTimeMs ?? 0,
-      failedAttempts: failedAttempts + 1,
-      retryCount: telemetry.retryCount ?? 0,
-      interactionEventCount: telemetry.interactionEventCount ?? 0,
-      challengeAgeMs: ageMs(challenge.issuedAt),
-      expectedDurationMs: challenge.renderConfiguration.durationMs,
-    });
+    const risk = calculateRisk({ ...riskInputs, challengeSolved: false });
 
     return jsonOk({
       verified: false,
@@ -101,15 +135,7 @@ export async function POST(request: Request) {
 
   store.consumeChallenge(challengeId);
 
-  const risk = calculateRisk({
-    challengeSolved: true,
-    completionTimeMs: telemetry.completionTimeMs ?? 0,
-    failedAttempts,
-    retryCount: telemetry.retryCount ?? 0,
-    interactionEventCount: telemetry.interactionEventCount ?? 0,
-    challengeAgeMs: ageMs(challenge.issuedAt),
-    expectedDurationMs: challenge.renderConfiguration.durationMs,
-  });
+  const risk = calculateRisk({ ...riskInputs, challengeSolved: true });
 
   return jsonOk({
     verified: true,

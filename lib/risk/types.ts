@@ -11,6 +11,12 @@ export type RiskInputs = {
   challengeAgeMs: number;
   /** Expected challenge animation duration — used for timing heuristics. */
   expectedDurationMs?: number;
+  /** Server-observed active window (ms). */
+  serverActiveMs?: number;
+  /** Number of progressive frame polls observed server-side. */
+  framePollCount?: number;
+  /** Whether verify presented a matching session cookie. */
+  sessionBound?: boolean;
 };
 
 export type RiskFactor = {

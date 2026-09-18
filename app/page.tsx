@@ -64,13 +64,13 @@ export default function HomePage() {
           </div>
           <ol className="space-y-4 font-mono text-sm text-slate-300">
             <li className="border-l-2 border-cyan-500/50 pl-4">
-              POST /api/challenge — generate temporal scene + ground truth
+              POST /api/challenge — issue scene identity (no motion plan)
             </li>
             <li className="border-l-2 border-cyan-500/50 pl-4">
-              Client renders canvas animation; answer stays server-side
+              Start → progressive /frame poses on server clock; answer stays server-side
             </li>
             <li className="border-l-2 border-cyan-500/50 pl-4">
-              POST /api/verify — signature, expiry, replay, ground truth, risk
+              POST /api/verify — signature, session, lifecycle, active window, ground truth, risk
             </li>
             <li className="border-l-2 border-cyan-500/50 pl-4">
               Decision: allow · step_up · restrict

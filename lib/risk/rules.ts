@@ -68,6 +68,40 @@ export function evaluateRiskFactors(inputs: RiskInputs): RiskFactor[] {
     });
   }
 
+  // Server-observed short active window despite client claiming otherwise
+  if (
+    inputs.challengeSolved &&
+    typeof inputs.serverActiveMs === "number" &&
+    inputs.serverActiveMs < expected * 0.5
+  ) {
+    factors.push({
+      code: "short_server_active",
+      weight: 0.3,
+      detail: `Server active window ${inputs.serverActiveMs}ms`,
+    });
+  }
+
+  // Few frame polls → likely non-interactive / scripted verify path
+  if (
+    inputs.challengeSolved &&
+    typeof inputs.framePollCount === "number" &&
+    inputs.framePollCount < 3
+  ) {
+    factors.push({
+      code: "low_frame_polls",
+      weight: 0.22,
+      detail: `Only ${inputs.framePollCount} progressive frame poll(s)`,
+    });
+  }
+
+  if (inputs.sessionBound === false) {
+    factors.push({
+      code: "session_unbound",
+      weight: 0.35,
+      detail: "Verify lacked matching short-lived session cookie",
+    });
+  }
+
   // Baseline friction for solved challenges keeps score in LOW band
   if (inputs.challengeSolved && factors.length === 0) {
     factors.push({

@@ -10,8 +10,9 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
-    "test:redteam": "vitest run tests/redteam && playwright test -c playwright.redteam.config.ts",
-    "attack:matrix": "node scripts/attacks/run-attack-matrix.mjs"
+    "test:redteam": "vitest run --config vitest.redteam.config.ts; playwright test -c playwright.redteam.config.ts",
+    "attack:matrix": "node scripts/attacks/run-attack-matrix.mjs",
+    "attack:retest": "node scripts/attacks/run-phase3-retest.mjs"
   },
   "dependencies": {
     "next": "16.3.5",
