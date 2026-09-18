@@ -237,13 +237,17 @@ export default function StudyPage() {
         <header className="flex flex-wrap items-center justify-between gap-4">
           <div>
             <p className="font-mono text-xs tracking-[0.25em] text-cyan-400/80">
-              HUMAN STUDY · PHASE 6
+              HUMAN STUDY · PHASE 8
             </p>
             <h1 className="font-display mt-1 text-3xl text-slate-50">
               Observational pilot
             </h1>
             <p className="mt-2 text-sm text-slate-400">
               Observational pilot — not a scientific human-performance study.
+            </p>
+            <p className="mt-1 text-xs text-amber-200/80">
+              Research/portfolio prototype — not production security
+              infrastructure. Target N 30–50; results report honest N only.
             </p>
           </div>
           <nav className="flex gap-3 text-sm">
@@ -358,6 +362,7 @@ export default function StudyPage() {
                         setSelected(pose.id);
                         setEvents((n) => n + 1);
                       }}
+                      aria-pressed={selected === pose.id}
                       className={`w-full rounded border px-3 py-2 text-left text-sm ${
                         selected === pose.id
                           ? "border-cyan-400 bg-cyan-950/40"

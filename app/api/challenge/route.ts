@@ -2,6 +2,7 @@ import { CreateChallengeRequestSchema } from "@/lib/api/schemas";
 import { clientKeyFromRequest, jsonError, jsonOk } from "@/lib/api/http";
 import { generateTemporalChallenge } from "@/lib/challenge/generator";
 import { toPublicChallenge } from "@/lib/challenge/public";
+import { authorizeChallengeRequest } from "@/lib/developers/auth";
 import { signChallengeToken } from "@/lib/security/signing";
 import { checkRateLimit } from "@/lib/security/rateLimit";
 import {
@@ -37,6 +38,16 @@ export async function POST(request: Request) {
     });
   }
 
+  const auth = authorizeChallengeRequest({
+    request,
+    bodyApiKey: parsed.data.apiKey,
+    environment: parsed.data.environment === "live" ? "live" : "test",
+    projectId: parsed.data.projectId,
+  });
+  if (!auth.ok) {
+    return jsonError(auth.status, auth.error);
+  }
+
   try {
     const store = getChallengeStore();
     await store.purgeExpired();
@@ -48,8 +59,8 @@ export async function POST(request: Request) {
       sessionId,
       issuedAt: now,
       expiresAt,
-      environment: parsed.data.environment === "live" ? "live" : "test",
-      projectId: parsed.data.projectId,
+      environment: auth.environment,
+      projectId: auth.projectId ?? parsed.data.projectId,
     });
 
     const challenge = generateTemporalChallenge({

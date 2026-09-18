@@ -1,12 +1,6 @@
 import type { StoredChallenge } from "@/lib/challenge/types";
 import type { ChallengeStore } from "@/lib/storage/challengeStore";
-
-type RedisLike = {
-  get(key: string): Promise<string | null>;
-  set(key: string, value: string, opts?: { EX?: number }): Promise<unknown>;
-  del(key: string): Promise<unknown>;
-  keys(pattern: string): Promise<string[]>;
-};
+import { redisSetEx, type RedisLike } from "@/lib/storage/redis";
 
 const PREFIX = "ap:challenge:";
 
@@ -26,9 +20,12 @@ export class RedisBackedChallengeStore implements ChallengeStore {
   }
 
   async createChallenge(challenge: StoredChallenge): Promise<void> {
-    await this.redis.set(PREFIX + challenge.challengeId, JSON.stringify(challenge), {
-      EX: this.ttlSeconds(challenge),
-    });
+    await redisSetEx(
+      this.redis,
+      PREFIX + challenge.challengeId,
+      JSON.stringify(challenge),
+      this.ttlSeconds(challenge),
+    );
   }
 
   async getChallenge(

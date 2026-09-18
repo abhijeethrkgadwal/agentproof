@@ -7,7 +7,13 @@ import type { SessionRecord, SessionStore } from "@/lib/security/session";
 
 export type RedisLike = {
   get(key: string): Promise<string | null>;
-  set(key: string, value: string, opts?: { EX?: number }): Promise<unknown>;
+  /** ioredis: set(key, value, 'EX', seconds) — object `{ EX }` is NOT supported. */
+  set(
+    key: string,
+    value: string,
+    expiryMode?: "EX",
+    ttlSeconds?: number,
+  ): Promise<unknown>;
   del(key: string): Promise<unknown>;
   incr(key: string): Promise<number>;
   expire(key: string, seconds: number): Promise<unknown>;
@@ -16,6 +22,16 @@ export type RedisLike = {
   quit(): Promise<unknown>;
   connect?: () => Promise<unknown>;
 };
+
+/** SET with TTL in seconds (ioredis EX form). */
+export async function redisSetEx(
+  redis: RedisLike,
+  key: string,
+  value: string,
+  ttlSeconds: number,
+): Promise<void> {
+  await redis.set(key, value, "EX", Math.max(1, Math.floor(ttlSeconds)));
+}
 
 let redisClient: RedisLike | null = null;
 let redisInitError: string | null = null;
@@ -60,9 +76,12 @@ export class RedisSessionStore implements SessionStore {
 
   async put(record: SessionRecord): Promise<void> {
     const ttl = Math.max(1, Math.ceil((record.expiresAt - Date.now()) / 1000));
-    await this.redis.set(SID_PREFIX + record.sessionId, JSON.stringify(record), {
-      EX: ttl,
-    });
+    await redisSetEx(
+      this.redis,
+      SID_PREFIX + record.sessionId,
+      JSON.stringify(record),
+      ttl,
+    );
   }
 
   async get(sessionId: string): Promise<SessionRecord | undefined> {

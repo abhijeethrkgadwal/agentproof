@@ -1,7 +1,19 @@
 import { jsonOk } from "@/lib/api/http";
+import { getStorageBackend, getRedisUrl } from "@/lib/config/env";
+import { getRedisInitError } from "@/lib/storage/redis";
 
 export const runtime = "nodejs";
 
 export async function GET() {
-  return jsonOk({ status: "ok", service: "agentproof" });
+  const backend = getStorageBackend();
+  return jsonOk({
+    status: "ok",
+    service: "agentproof",
+    label: "research/portfolio prototype — not production security infrastructure",
+    storage: {
+      configured: backend,
+      redisUrlConfigured: Boolean(getRedisUrl()),
+      redisInitError: getRedisInitError(),
+    },
+  });
 }

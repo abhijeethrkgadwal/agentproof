@@ -252,8 +252,13 @@ export default function AccessibleDemoPage() {
         <aside className="rounded border border-slate-800 bg-slate-950/50 p-4 text-xs text-slate-500">
           <p>
             This accessible path uses the same server-authoritative progressive
-            frame protocol as the canvas demo. It is intended for the Phase 6
-            pilot and is <strong className="text-slate-300">not yet a complete WCAG audit</strong>.
+            frame protocol as the canvas demo. It is intended for the Phase 8
+            observational pilot and is{" "}
+            <strong className="text-slate-300">
+              not yet a complete WCAG audit
+            </strong>
+            . Research/portfolio prototype — not production security
+            infrastructure.
           </p>
           <p className="mt-2">
             Prefer the study flow at{" "}

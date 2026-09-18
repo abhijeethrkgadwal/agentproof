@@ -36,6 +36,9 @@ See also `examples/integration.html`.
 ## Server-side verification (recommended)
 
 1. Your backend calls `POST /api/challenge` with optional `apiKey` / `projectId` / `environment`.
+   - **test** (default): key optional (demo/Lab).
+   - **live**: valid `live` API key required (`X-AgentProof-Key` or body `apiKey`).
+   - Invalid / revoked keys are rejected with `401 invalid_api_key` (never silently ignored).
 2. Browser runs Start → progressive `/frame` → user selects.
 3. Browser or backend calls `POST /api/verify` with session cookie + token.
 4. Trust only the server `verified` + `decision` fields.
