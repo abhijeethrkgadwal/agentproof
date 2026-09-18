@@ -1,7 +1,9 @@
 import { VerifyRequestSchema } from "@/lib/api/schemas";
 import { clientKeyFromRequest, jsonError, jsonOk } from "@/lib/api/http";
 import { validateSelectedObject } from "@/lib/challenge/validator";
-import { calculateRisk } from "@/lib/risk/score";
+import { getDecisionEngine } from "@/lib/decision/ruleEngine";
+import { createFeatureSnapshot } from "@/lib/features/snapshot";
+import { appendFeatureSnapshot } from "@/lib/features/store";
 import { ageMs, isExpired } from "@/lib/security/expiry";
 import { checkRateLimit } from "@/lib/security/rateLimit";
 import { assertNotConsumed } from "@/lib/security/replay";
@@ -99,51 +101,81 @@ export async function POST(request: Request) {
     });
   }
 
+  // Ground-truth verification is COMPLETELY SEPARATE from risk scoring.
   const answer = validateSelectedObject(challenge, selectedObjectId);
   const failedAttempts = challenge.failedAttempts;
 
-  const riskInputs = {
-    challengeSolved: answer.correct,
-    completionTimeMs: telemetry.completionTimeMs ?? serverActiveMs,
-    failedAttempts: answer.correct ? failedAttempts : failedAttempts + 1,
-    retryCount: telemetry.retryCount ?? 0,
-    interactionEventCount: telemetry.interactionEventCount ?? 0,
-    challengeAgeMs: ageMs(challenge.issuedAt),
-    expectedDurationMs: challenge.renderConfiguration.durationMs,
-    serverActiveMs,
-    framePollCount: challenge.framePollCount,
-    sessionBound,
-  };
+  const completionTimeMs = telemetry.completionTimeMs ?? serverActiveMs;
+  const interactionEventCount = telemetry.interactionEventCount ?? 0;
+  const retryCount = telemetry.retryCount ?? 0;
+  const challengeAgeMs = ageMs(challenge.issuedAt);
+  const frameCount = challenge.framePollCount;
 
   if (!answer.correct) {
     store.incrementFailedAttempts(challengeId);
     store.consumeChallenge(challengeId);
 
-    const risk = calculateRisk({ ...riskInputs, challengeSolved: false });
+    const draft = createFeatureSnapshot({
+      challengeType: challenge.challengeType,
+      difficulty: challenge.difficulty,
+      completionTimeMs,
+      frameCount,
+      apiRequestCount: frameCount + 2,
+      interactionEventCount,
+      retryCount: Math.max(retryCount, failedAttempts + 1),
+      challengeAgeMs,
+      verified: false,
+      decision: "pending",
+    });
+    const engine = getDecisionEngine();
+    const decision = engine.evaluate({ ...draft, verified: false });
+    const snapshot = createFeatureSnapshot({
+      ...draft,
+      decision: decision.nextAction,
+    });
+    appendFeatureSnapshot(challengeId, snapshot);
 
     return jsonOk({
       verified: false,
-      decision: risk.decision,
-      riskScore: risk.riskScore,
-      confidence: risk.confidence,
-      band: risk.band,
+      decision: decision.nextAction,
+      riskScore: decision.riskScore,
+      confidence: decision.confidence,
+      band: decision.classification,
       challengeId,
       reason: answer.reason,
-      factors: risk.factors,
+      factors: decision.factors,
     });
   }
 
   store.consumeChallenge(challengeId);
 
-  const risk = calculateRisk({ ...riskInputs, challengeSolved: true });
+  const draft = createFeatureSnapshot({
+    challengeType: challenge.challengeType,
+    difficulty: challenge.difficulty,
+    completionTimeMs,
+    frameCount,
+    apiRequestCount: frameCount + 2,
+    interactionEventCount,
+    retryCount,
+    challengeAgeMs,
+    verified: true,
+    decision: "pending",
+  });
+  const engine = getDecisionEngine();
+  const decision = engine.evaluate({ ...draft, verified: true });
+  const snapshot = createFeatureSnapshot({
+    ...draft,
+    decision: decision.nextAction,
+  });
+  appendFeatureSnapshot(challengeId, snapshot);
 
   return jsonOk({
     verified: true,
-    decision: risk.decision,
-    riskScore: risk.riskScore,
-    confidence: risk.confidence,
-    band: risk.band,
+    decision: decision.nextAction,
+    riskScore: decision.riskScore,
+    confidence: decision.confidence,
+    band: decision.classification,
     challengeId,
-    factors: risk.factors,
+    factors: decision.factors,
   });
 }

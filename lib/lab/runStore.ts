@@ -12,7 +12,6 @@ declare global {
 }
 
 function ensureStore(): LabRunRecord[] {
-  // Always re-read disk so CLI runners and API stay consistent for research.
   mkdirSync(DATA_DIR, { recursive: true });
   if (existsSync(DATA_FILE)) {
     try {
@@ -61,22 +60,27 @@ export function clearLabRuns(): void {
   persist([]);
 }
 
-export function benchmarkByLevel(): BenchmarkRow[] {
-  const levels: AttackerLevel[] = [
+export function benchmarkByLevel(
+  levels: AttackerLevel[] = [
     "human",
+    "human_study",
     "l1_api_observer",
     "l2_browser",
     "l3_vision",
-  ];
+    "lab_v2",
+  ],
+): BenchmarkRow[] {
   const runs = ensureStore();
   return levels.map((level) => {
     const subset = runs.filter((r) => r.level === level);
+    // Prefer success-only medians; if none, fall back to all attempts for cost visibility
     const successes = subset.filter((r) => r.success);
-    const times = successes.map((r) => r.timeToSolveMs);
-    const frames = successes.map((r) => r.framesObserved);
-    const apis = successes.map((r) => r.apiCalls);
-    const actions = successes.map((r) => r.actions);
-    const costs = successes.map((r) => r.automationCost);
+    const pool = successes.length > 0 ? successes : subset;
+    const times = pool.map((r) => r.timeToSolveMs);
+    const frames = pool.map((r) => r.framesObserved);
+    const apis = pool.map((r) => r.apiCalls);
+    const actions = pool.map((r) => r.actions);
+    const costs = pool.map((r) => r.automationCost);
     return {
       level,
       runs: subset.length,

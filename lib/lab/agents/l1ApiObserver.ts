@@ -74,6 +74,7 @@ export async function runL1ApiObserver(
           timeToSolveMs: Date.now() - t0,
           actions,
           framesObserved,
+          apiCalls,
         }),
         verificationResult: { error: issued.json.error, status: issued.status },
         notes: "challenge_issue_failed",
@@ -107,6 +108,7 @@ export async function runL1ApiObserver(
           timeToSolveMs: Date.now() - t0,
           actions,
           framesObserved,
+          apiCalls,
         }),
         verificationResult: { error: started.json.error, status: started.status },
         notes: "start_failed",
@@ -159,6 +161,7 @@ export async function runL1ApiObserver(
           timeToSolveMs: Date.now() - t0,
           actions,
           framesObserved,
+          apiCalls,
         }),
         notes: `derive_failed:${derived.error}`,
       };
@@ -199,6 +202,7 @@ export async function runL1ApiObserver(
         timeToSolveMs,
         actions,
         framesObserved,
+        apiCalls,
       }),
       verificationResult: {
         verified: verify.json.verified,
@@ -224,6 +228,7 @@ export async function runL1ApiObserver(
         timeToSolveMs,
         actions,
         framesObserved,
+        apiCalls,
       }),
       notes: error instanceof Error ? error.message : "unknown_error",
     };

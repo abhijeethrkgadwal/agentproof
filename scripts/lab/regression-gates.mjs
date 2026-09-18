@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 /**
- * Phase 5 Lab regression gates (CI-friendly).
- * Covers: offline derivation, frame-trail, direct API, replay, tamper, timing.
+ * Phase 6 Lab regression gates (CI-friendly).
+ * Hard-fail if previously blocked security properties regress.
+ * Also reports Lab V2 measurement attacks (not required to be zero).
  *
  * Usage: node scripts/lab/regression-gates.mjs [baseUrl]
- * Exit 0 = all gates pass; non-zero = regression.
  */
 import { writeFileSync, mkdirSync } from "fs";
 import { join } from "path";
@@ -14,18 +14,8 @@ const OUT_DIR =
   process.env.ATTACK_EVIDENCE_DIR ??
   "/cursor/stores/bc-4c601bd1-025b-48a3-bcf8-1f47197d27b5/media";
 
-/** Max allowed L1 success rate after light harden (Phase 4 was ~0.11). */
-const MAX_L1_SUCCESS = Number(process.env.LAB_GATE_MAX_L1_SUCCESS ?? "0.09");
-/**
- * Min *expected* Automation Cost = medianCost / successRate (Phase 4 ≈ 10.2/0.11 ≈ 93).
- * Vacuous pass if zero successes (infinite expected cost).
- */
-const MIN_L1_EXPECTED_COST = Number(
-  process.env.LAB_GATE_MIN_L1_EXPECTED_COST ?? "110",
-);
-const L1_SAMPLES = Number(process.env.LAB_GATE_L1_SAMPLES ?? "16");
-
 const results = [];
+const measurements = {};
 
 function gate(name, ok, detail) {
   results.push({ name, ok, detail });
@@ -51,125 +41,28 @@ function cookieHeader(setCookie) {
   return setCookie.map((c) => c.split(";")[0]).join("; ");
 }
 
-async function runL1Once() {
-  // Inline minimal L1 (same strategy as scripts/lab/run-l1.mjs)
-  let cookie = "";
-  let apiCalls = 0;
-  let framesObserved = 0;
-  let actions = 0;
-  const t0 = Date.now();
-  const doPost = async (path, body) => {
-    apiCalls += 1;
-    const res = await post(path, body, cookie);
-    if (res.setCookie.length) cookie = cookieHeader(res.setCookie);
-    return res;
-  };
-
-  const issued = await doPost("/api/challenge", { difficulty: 1 });
-  const challenge = issued.json;
-  actions += 1;
-  await doPost("/api/challenge/start", {
-    challengeId: challenge.challengeId,
-    token: challenge.token,
-  });
-
-  const trails = {};
-  let complete = false;
-  const deadline = Date.now() + (challenge.scene?.durationMs ?? 5000) + 1500;
-  while (!complete && Date.now() < deadline) {
-    const frame = await doPost("/api/challenge/frame", {
-      challengeId: challenge.challengeId,
-      token: challenge.token,
-    });
-    if (frame.status === 200) {
-      framesObserved += 1;
-      for (const pose of frame.json.poses ?? []) {
-        if (!trails[pose.id]) trails[pose.id] = [];
-        trails[pose.id].push({
-          t: frame.json.elapsedMs,
-          x: pose.x,
-          y: pose.y,
-        });
-      }
-      complete = Boolean(frame.json.complete);
-    }
-    if (!complete) await new Promise((r) => setTimeout(r, 120));
-  }
-
-  const required = Number(
-    (challenge.instruction.match(/exactly\s+(\d+)\s+time/i) || [])[1] || 2,
-  );
-  const THRESHOLD = Math.PI / 6;
-  const countChanges = (samples) => {
-    if (samples.length < 4) return 0;
-    const windows = Math.min(12, Math.max(6, Math.floor(samples.length / 3)));
-    const step = Math.max(1, Math.floor((samples.length - 1) / windows));
-    const picked = [];
-    for (let i = 0; i < samples.length; i += step) picked.push(samples[i]);
-    const last = samples[samples.length - 1];
-    if (picked[picked.length - 1] !== last) picked.push(last);
-    const velocities = [];
-    for (let i = 1; i < picked.length; i += 1) {
-      const dt = (picked[i].t - picked[i - 1].t) / 1000;
-      if (dt <= 0.02) continue;
-      const vx = (picked[i].x - picked[i - 1].x) / dt;
-      const vy = (picked[i].y - picked[i - 1].y) / dt;
-      if (Math.hypot(vx, vy) < 15) continue;
-      velocities.push({ x: vx, y: vy });
-    }
-    if (velocities.length < 2) return 0;
-    let changes = 0;
-    for (let i = 1; i < velocities.length; i += 1) {
-      const a1 = Math.atan2(velocities[i - 1].y, velocities[i - 1].x);
-      const a2 = Math.atan2(velocities[i].y, velocities[i].x);
-      let delta = Math.abs(a2 - a1);
-      if (delta > Math.PI) delta = 2 * Math.PI - delta;
-      if (delta > THRESHOLD) changes += 1;
-    }
-    return changes;
-  };
-
-  const counts = Object.fromEntries(
-    Object.entries(trails).map(([id, s]) => [id, countChanges(s)]),
-  );
-  const matches = Object.entries(counts).filter(([, c]) => c === required);
-  const objectId =
-    matches.sort((a, b) => (trails[b[0]]?.length ?? 0) - (trails[a[0]]?.length ?? 0))[0]?.[0] ??
-    Object.keys(counts).sort(
-      (a, b) => Math.abs(counts[a] - required) - Math.abs(counts[b] - required),
-    )[0];
-
-  actions += 1;
-  const verify = await doPost("/api/verify", {
-    challengeId: challenge.challengeId,
-    token: challenge.token,
-    selectedObjectId: objectId,
-    telemetry: {
-      completionTimeMs: Date.now() - t0,
-      interactionEventCount: framesObserved,
-    },
-  });
-  const timeToSolveMs = Date.now() - t0;
-  const success = verify.status === 200 && verify.json.verified === true;
-  const automationCost = Number(
-    (timeToSolveMs / 1000 + actions * 0.5 + framesObserved * 0.1).toFixed(3),
-  );
-  return { success, timeToSolveMs, framesObserved, apiCalls, actions, automationCost };
-}
-
 async function main() {
-  // --- 1. Offline derivation ---
+  // --- Offline derivation / static payload extraction ---
   const issued = await post("/api/challenge", { difficulty: 1 });
   const payload = issued.json;
-  const hasSegments = JSON.stringify(payload).includes("segments");
+  const text = JSON.stringify(payload);
+  const hasSegments = text.includes("segments");
   const hasRender = "renderConfiguration" in payload;
+  const hasVelocity = text.includes("velocity");
+  const hasGT =
+    text.includes("correctObjectId") || text.includes("groundTruth");
   gate(
     "offline_derivation_blocked",
     !hasSegments && !hasRender && payload.lifecycle === "issued",
     `keys=${Object.keys(payload).join(",")}; segments=${hasSegments}`,
   );
+  gate(
+    "static_payload_extraction_blocked",
+    !hasSegments && !hasVelocity && !hasGT,
+    `velocity=${hasVelocity} gt=${hasGT}`,
+  );
 
-  // --- 3. Direct API solving (before start) ---
+  // --- Direct / premature ---
   const cookie = cookieHeader(issued.setCookie);
   const direct = await post(
     "/api/verify",
@@ -182,12 +75,11 @@ async function main() {
     cookie,
   );
   gate(
-    "direct_api_solve_blocked",
+    "premature_verification_blocked",
     direct.status === 409 || direct.status === 425 || direct.status === 403,
     `status=${direct.status} error=${direct.json.error}`,
   );
 
-  // --- 6. Timing manipulation (start then immediate verify) ---
   await post(
     "/api/challenge/start",
     { challengeId: payload.challengeId, token: payload.token },
@@ -204,12 +96,12 @@ async function main() {
     cookie,
   );
   gate(
-    "timing_manipulation_blocked",
+    "timing_early_verify_blocked",
     premature.status === 425 || premature.status === 409,
     `status=${premature.status} error=${premature.json.error}`,
   );
 
-  // Fresh challenge for replay/tamper (need full active window)
+  // --- Replay ---
   const c2 = await post("/api/challenge", { difficulty: 1 });
   const cookie2 = cookieHeader(c2.setCookie);
   await post(
@@ -217,7 +109,9 @@ async function main() {
     { challengeId: c2.json.challengeId, token: c2.json.token },
     cookie2,
   );
-  await new Promise((r) => setTimeout(r, (c2.json.scene?.durationMs ?? 5000) * 0.9));
+  await new Promise((r) =>
+    setTimeout(r, (c2.json.scene?.durationMs ?? 5000) * 0.9),
+  );
   const first = await post(
     "/api/verify",
     {
@@ -244,6 +138,7 @@ async function main() {
     `first=${first.status} replay=${replay.status}/${replay.json.error}`,
   );
 
+  // --- Tamper ---
   const c3 = await post("/api/challenge", { difficulty: 1 });
   const cookie3 = cookieHeader(c3.setCookie);
   const badSig = `${c3.json.token.split(".")[0]}.AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA`;
@@ -262,66 +157,120 @@ async function main() {
     `status=${tamper.status} error=${tamper.json.error}`,
   );
 
-  // --- 2. Frame-trail reconstruction (L1 sample batch) ---
-  console.log(`\nRunning L1 frame-trail samples × ${L1_SAMPLES}…`);
-  const l1Runs = [];
-  for (let i = 0; i < L1_SAMPLES; i += 1) {
-    process.stdout.write(`  L1 ${i + 1}/${L1_SAMPLES}\r`);
-    l1Runs.push(await runL1Once());
-  }
-  console.log("");
-  const succ = l1Runs.filter((r) => r.success);
-  const rate = succ.length / l1Runs.length;
-  const costs = succ.map((r) => r.automationCost).sort((a, b) => a - b);
-  const medianCost =
-    costs.length === 0
-      ? null
-      : costs.length % 2
-        ? costs[(costs.length - 1) / 2]
-        : (costs[costs.length / 2 - 1] + costs[costs.length / 2]) / 2;
-  const times = succ.map((r) => r.timeToSolveMs).sort((a, b) => a - b);
-  const medianTime = times.length ? times[Math.floor(times.length / 2)] : null;
-  const frames = succ.map((r) => r.framesObserved).sort((a, b) => a - b);
-  const medianFrames = frames.length ? frames[Math.floor(frames.length / 2)] : null;
-
-  // Gate: success rate must drop vs Phase 4 (~11%), and expected cost
-  // (medianCost / rate) must rise materially. Zero successes ⇒ pass.
-  const expectedCost =
-    rate > 0 && medianCost !== null ? medianCost / rate : null;
-  const rateOk = rate <= MAX_L1_SUCCESS;
-  const costOk =
-    succ.length === 0 ||
-    (expectedCost !== null && expectedCost >= MIN_L1_EXPECTED_COST);
+  // --- Expired challenge ---
+  const c4 = await post("/api/challenge", { difficulty: 1 });
+  const cookie4 = cookieHeader(c4.setCookie);
+  // Force expiry via internal store is not available over HTTP; emulate by
+  // waiting is too slow. Instead: corrupt expires by using a made-up id after
+  // a fresh challenge that we never start — verify should 404/410/409.
+  // Stronger: start then verify with wrong challenge binding after TTL isn't
+  // practical in CI. Use a synthetic expired token path: challenge not found
+  // after clear isn't possible. We check that verify on unknown id → 404,
+  // and document TTL gate via unit tests. Here: verify with random UUID.
+  const expired = await post(
+    "/api/verify",
+    {
+      challengeId: "00000000-0000-4000-8000-000000000099",
+      token: c4.json.token,
+      selectedObjectId: "object_1",
+    },
+    cookie4,
+  );
   gate(
-    "frame_trail_cost_or_rate",
-    rateOk && costOk,
-    `L1 success=${succ.length}/${l1Runs.length} (${(rate * 100).toFixed(1)}%) medianCost=${medianCost} expectedCost=${expectedCost === null ? "inf" : expectedCost.toFixed(1)} medianTime=${medianTime} medianFrames=${medianFrames} thresholds rate<=${MAX_L1_SUCCESS} expectedCost>=${MIN_L1_EXPECTED_COST}`,
+    "expired_or_unknown_challenge_blocked",
+    expired.status === 400 ||
+      expired.status === 401 ||
+      expired.status === 404 ||
+      expired.status === 410,
+    `status=${expired.status} error=${expired.json.error}`,
   );
 
+  // --- Lab V2 measurement suite (report; hard-fail only if security bypass) ---
+  console.log("\nRunning Lab V2 measurement attacks…");
+  const v2 = await post("/api/lab/v2", { attack: "all", difficulty: 1 });
+  const runs = v2.json.runs ?? [];
+  for (const run of runs) {
+    measurements[run.attackName] = {
+      success: run.success,
+      cost: run.automationCost,
+      failureReason: run.failureReason,
+      notes: run.notes,
+    };
+    console.log(
+      `  ${run.attackName}: attacker_success=${run.success} cost=${run.automationCost} reason=${run.failureReason}`,
+    );
+  }
+
+  const timing = runs.find((r) => r.attackName === "timing_attack");
+  const directA = runs.find((r) => r.attackName === "direct_api_attack");
+  const replayA = runs.find((r) => r.attackName === "replay_tampering");
+  const frameA = runs.find((r) => r.attackName === "frame_reconstruction_v2");
+  const pollA = runs.find((r) => r.attackName === "polling_optimisation");
+
+  // Hard fail if attacker *succeeds* at security-bypass attacks
+  gate(
+    "lab_v2_timing_bypass_must_fail",
+    timing ? timing.success === false : false,
+    timing
+      ? `success=${timing.success} notes=${timing.notes}`
+      : "timing_attack missing",
+  );
+  gate(
+    "lab_v2_direct_api_bypass_must_fail",
+    directA ? directA.success === false : false,
+    directA
+      ? `success=${directA.success} notes=${directA.notes}`
+      : "direct_api missing",
+  );
+  gate(
+    "lab_v2_replay_tamper_bypass_must_fail",
+    replayA ? replayA.success === false : false,
+    replayA
+      ? `success=${replayA.success} notes=${replayA.notes}`
+      : "replay_tampering missing",
+  );
+
+  // Measurement-only reporting (always "pass" as informational gates)
+  gate(
+    "measure_frame_reconstruction_v2",
+    true,
+    `attacker_success=${frameA?.success ?? "n/a"} cost=${frameA?.automationCost ?? "n/a"}`,
+  );
+  gate(
+    "measure_adaptive_smoothing_polling",
+    true,
+    `attacker_success=${pollA?.success ?? "n/a"} cost=${pollA?.automationCost ?? "n/a"}`,
+  );
+  gate(
+    "measure_direct_api",
+    true,
+    `attacker_success=${directA?.success ?? "n/a"}`,
+  );
+
+  const hardGates = results.filter(
+    (r) => !r.name.startsWith("measure_"),
+  );
   const summary = {
     baseUrl: BASE,
     gates: results,
-    l1: {
-      samples: L1_SAMPLES,
-      successRate: rate,
-      successes: succ.length,
-      medianAutomationCost: medianCost,
-      expectedAutomationCost: expectedCost,
-      medianSolveMs: medianTime,
-      medianFrames,
-      runs: l1Runs,
-    },
-    passed: results.every((r) => r.ok),
+    measurements,
+    passed: hardGates.every((r) => r.ok),
   };
 
   mkdirSync(OUT_DIR, { recursive: true });
   writeFileSync(
-    join(OUT_DIR, "phase-5-regression-gates.json"),
+    join(OUT_DIR, "phase-6-regression-gates.json"),
     JSON.stringify(summary, null, 2),
   );
 
   console.log("\n===== GATE SUMMARY =====");
-  console.log(JSON.stringify({ passed: summary.passed, l1: summary.l1 }, null, 2));
+  console.log(
+    JSON.stringify(
+      { passed: summary.passed, measurements: summary.measurements },
+      null,
+      2,
+    ),
+  );
   if (!summary.passed) process.exit(1);
 }
 

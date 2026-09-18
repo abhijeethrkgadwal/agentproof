@@ -1,0 +1,16 @@
+[
+  {
+    "participantId": "pilot_seed",
+    "challengeId": "seed-demo",
+    "difficulty": 1,
+    "success": true,
+    "completionTimeMs": 6400,
+    "retryCount": 0,
+    "interactionEventCount": 6,
+    "framesObserved": 42,
+    "accessibilityPathUsed": false,
+    "abandoned": false,
+    "attemptId": "b23f2ad3-7031-4047-98ff-0d593b2ea04d",
+    "timestamp": "2026-09-18T11:13:11.921Z"
+  }
+]

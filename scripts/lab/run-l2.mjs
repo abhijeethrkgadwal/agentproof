@@ -17,7 +17,8 @@ function computeAutomationCost(input) {
     (
       input.timeToSolveMs / 1000 +
       input.actions * 0.5 +
-      input.framesObserved * 0.1
+      input.framesObserved * 0.1 +
+      (input.apiCalls ?? 0) * 0.05
     ).toFixed(3),
   );
 }
@@ -174,6 +175,7 @@ async function oneRun(browser) {
       timeToSolveMs,
       actions,
       framesObserved,
+      apiCalls,
     }),
     verificationResult: { verified: success },
     notes: `selected=${selected}; required=${required}; counts=${JSON.stringify(counts)}; verifyEnabled=${enabled}`,

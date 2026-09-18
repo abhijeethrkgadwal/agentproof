@@ -6,9 +6,15 @@ AgentProof is a research prototype that issues dynamic interaction challenges, k
 
 **Important:** AgentProof does **not** claim to be “AI-proof” or to prove that a user is human. The goal is adaptive, measurable resistance to automated interaction — making abuse more expensive and less reliable while remaining low-friction for legitimate users.
 
-## Why traditional CAPTCHA is not enough
+## Phase 6 objectives
 
-Classical CAPTCHAs assume a hard human/AI boundary that is collapsing. Static puzzles leak answers, are farmed, and do not produce calibrated risk signals. AgentProof treats verification as a **server-authoritative, time-bound, one-time challenge** with transparent risk bands — one layer in a broader anti-automation strategy (aligned with OWASP layered controls).
+- Real **human study** observational pilot at `/study` (anonymous, consent-gated)
+- **Agent Lab V2** attacks A–F with persisted attack runs
+- Normalized **feature snapshots** + `DecisionEngine` / `RuleDecisionEngine` (no ML / Jev)
+- Regression gates for blocked security properties
+- Pilot accessibility path (not a full WCAG audit)
+
+Docs: [`docs/human-study.md`](docs/human-study.md) · [`docs/agent-lab.md`](docs/agent-lab.md) · [`docs/threat-model.md`](docs/threat-model.md)
 
 ## Architecture
 
@@ -16,146 +22,104 @@ Classical CAPTCHAs assume a hard human/AI boundary that is collapsing. Static pu
 Browser (untrusted)                 Server (authoritative)
 ─────────────────                   ──────────────────────
 POST /api/challenge          ────>  Issue scene identity + cookie
-                             <────  (no motion segments)
 POST /api/challenge/start    ────>  lifecycle → active
-POST /api/challenge/frame    ────>  poses @ server elapsed only
-Canvas paints progressive poses
-POST /api/verify             ────>  session + lifecycle + window
-                                    + HMAC/replay + ground truth + risk
+POST /api/challenge/frame    ────>  display poses (≠ exact GT math)
+POST /api/verify             ────>  GT check SEPARATE from DecisionEngine
                              <────  allow | step_up | restrict
+                                    + feature snapshot stored
 ```
 
-| Concern | Location |
-|--------|----------|
-| Challenge generation | `lib/challenge/` |
-| HMAC signing, nonce, expiry, replay | `lib/security/` |
-| Risk rules | `lib/risk/` |
-| Telemetry sanitize | `lib/telemetry/` |
-| In-memory store (Redis/Postgres-ready interface) | `lib/storage/` |
-| APIs | `app/api/{challenge,verify,health}` |
-| Demo UI | `app/demo`, `components/agentproof/` |
+## Human study methodology
 
-Phase 1 ships **one** challenge family: **temporal object tracking**.
+See [`docs/human-study.md`](docs/human-study.md). Label all results:
 
-## Threat model (Phase 1)
+> Observational pilot — not a scientific human-performance study.
 
-See [`docs/THREAT-MODEL.md`](docs/THREAT-MODEL.md) for the fuller write-up.
+Aggregates only via `/api/study/aggregate`. No public individual rows. No PII.
 
-In scope:
+## Agent Lab V2 & attack methodology
 
-- Forged or tampered challenge tokens
-- Replay of a successful (or attempted) verification
-- Expired challenges
-- Client-side “I solved it” claims
-- Brute-force object guessing on a single challenge
-- Excessive API request rates (basic limiter)
+See [`docs/agent-lab.md`](docs/agent-lab.md).
 
-Out of scope for Phase 1:
+```bash
+npm run lab:l1 -- http://127.0.0.1:43123 5
+npm run lab:l2
+npm run lab:v2 -- http://127.0.0.1:43123 all
+npm run lab:gates -- http://127.0.0.1:43123
+```
 
-- Sophisticated browser agents / red-team automation (Phase 2)
-- Distributed botnets, residential proxies, human farms
-- Device fingerprinting, WebAuthn, ML anomaly models
+Dashboard `/lab` separates **HUMAN OBSERVATIONS** (study) from **AUTOMATED ATTACKS**.
 
-Product thesis (locked): AgentProof does not try to prove that a user is “human.” It evaluates **interaction risk** for a specific session and can escalate when risk is high.
+## Automation Cost definition
 
-## Challenge lifecycle
+Normalized **experimental** metric — **not** a universal security score:
 
-1. Client `POST /api/challenge` → **issued** scene identity only (no motion segments). Session cookie set.
-2. Client `POST /api/challenge/start` → **active**; server begins wall-clock window.
-3. Client polls `POST /api/challenge/frame` → progressive poses at server elapsed time (no future plan).
-4. After minimum active window, client `POST /api/verify` with selection + cookie + token.
-5. Server checks signature → session → lifecycle → active duration → replay → ground truth → risk → **submitted**.
+```text
+AutomationCost =
+  timeToSolveMs/1000
+  + 0.5 * interactionCount
+  + 0.1 * framesObserved
+  + 0.05 * apiRequestCount
+```
 
-Phase 2 offline derive-from-segments is broken by design: issued JSON is not a complete solvable motion plan.
+Defined in `lib/lab/types.ts` (`computeAutomationCost`, `AUTOMATION_COST_FORMULA`).
 
+## Risk / decision engine
 
-## Verification flow
+Ground-truth answer checks stay separate from risk. Scoring goes through:
 
-Security checks (fail closed):
+- `DecisionEngine` interface (`lib/decision/types.ts`)
+- `RuleDecisionEngine` (`lib/decision/ruleEngine.ts`) — deterministic rules only
 
-- Zod request validation
-- HMAC-SHA256 signature (`AGENTPROOF_SIGNING_SECRET`) with constant-time compare
-- Challenge ID / nonce / session binding
-- Expiration
-- One-time consumption (replay → 409)
-- Server-side ground-truth comparison
-- Rate limiting
+Feature snapshots (`lib/features/*`) enable future engines without protocol changes. **No Jev / external AI in Phase 6.**
 
-## Risk scoring
+## Current security posture
 
-Rule-based **interaction risk score** ∈ [0, 1]. This is **not** “probability of being human.”
+| Property | Status |
+|----------|--------|
+| Offline derivation | Blocked |
+| Static payload GT extraction | Blocked |
+| Replay / tamper | Blocked |
+| Premature / expired verify | Blocked |
+| Frame-trail automation | Residual; measured by Lab V2 |
 
-| Band | Score | Decision |
-|------|-------|----------|
-| LOW | 0.00–0.29 | allow |
-| MEDIUM | 0.30–0.69 | step_up |
-| HIGH | 0.70–1.00 | restrict |
+## Privacy principles
 
-Factors include incorrect answer, failed attempts, retries, too-fast completion, sparse/excessive interaction, and stale challenges. A normal successful interaction is designed to land in LOW.
+Minimal telemetry. No browser fingerprinting, keystroke logging, clipboard collection, precise location, facial recognition, or unnecessary device identifiers.
 
-## Security assumptions
+## Known limitations / what remains unsolved
 
-- Signing secret stays only on the server
-- In-memory store is single-process (fine for local MVP; not multi-instance durable)
-- Client telemetry is untrusted and sanitized
-- Motion paths are visible to the client (necessary to render); the **label** of the correct object is not
-
-## Known limitations
-
-- Progressive `/frame` poses are visible (required to render) but are display-transformed (quantize/jitter/wobble/EMA); server GT remains authoritative
-- In-memory store resets on process restart; no Redis/Postgres yet
-- Rate limiter is per-process and best-effort
-- Single challenge family; no adaptive sequencing / Jev yet
-- No accessibility alternative challenge path yet
-- Residual adaptive attackers may still exist after light harden — Lab gates quantify them
+- Adaptive trail filters may still recover direction changes
+- L3 vision agents are stub-only
+- Human-farm economics unmodeled
+- Accessibility path is pilot-grade (not a complete WCAG audit)
+- Single challenge family; no adaptive sequencing yet
+- In-memory stores (lab/study/features) — not multi-instance durable
 
 ## Local development
 
 ```bash
 cp .env.example .env.local
-# set AGENTPROOF_SIGNING_SECRET to a long random string
+# set AGENTPROOF_SIGNING_SECRET
 
 npm install
-npm run dev -- --port 43123
+npm run dev -- --port 43123 --hostname 127.0.0.1
 ```
 
-Open [http://127.0.0.1:43123](http://127.0.0.1:43123).
-
-Health: `GET /api/health` → `{ "status": "ok", "service": "agentproof" }`.
-
-## Agent Lab (Phase 4+)
-
-Measure automation cost. Phase 5 lightly hardens `/frame` display poses (display ≠ GT).
-
-```bash
-npm run lab:l1 -- http://127.0.0.1:43123 5
-npm run lab:l2
-npm run lab:gates -- http://127.0.0.1:43123
-# Dashboard
-open http://127.0.0.1:43123/lab
-```
-
-Automation Cost = `timeToSolveMs/1000 + 0.5*actions + 0.1*framesObserved`.
-
-Regression gates cover: offline derivation, frame-trail, direct API, replay, tamper, timing.
-
-
-## Environment
-
-See `.env.example`:
-
-- `AGENTPROOF_SIGNING_SECRET` (required)
-- `DATABASE_URL` (reserved for future Prisma/Postgres)
-- Optional TTL / rate-limit knobs
-- Optional Phase 5 display harden knobs (`AGENTPROOF_DISPLAY_*`)
+- Demo: [http://127.0.0.1:43123/demo](http://127.0.0.1:43123/demo)
+- Study: [http://127.0.0.1:43123/study](http://127.0.0.1:43123/study)
+- Lab: [http://127.0.0.1:43123/lab](http://127.0.0.1:43123/lab)
+- Accessible: [http://127.0.0.1:43123/demo/accessible](http://127.0.0.1:43123/demo/accessible)
 
 ## Roadmap
 
-1. **Phase 1:** temporal challenge + signed verify loop + risk + tests
-2. **Phase 2:** attacker/red-team evaluation (offline derive measured)
-3. **Phase 3:** progressive frames + lifecycle + session (offline blocked)
-4. **Phase 4:** Agent Lab (L1/L2/L3 stub) + Automation Cost
-5. **Phase 5:** light `/frame` harden + Lab regression gates (Decision C; Jev later)
+1. Phase 1 — temporal challenge + signed verify + risk  
+2. Phase 2 — attack measurement (offline derive)  
+3. Phase 3 — progressive frames + lifecycle + session  
+4. Phase 4 — Agent Lab L1/L2/L3 stub  
+5. Phase 5 — light `/frame` harden + gates (Decision C)  
+6. **Phase 6 — human study + Lab V2 + DecisionEngine** (this)  
+7. Phase 7 — *not started* (adaptive policy / optional later Jev — out of scope here)
 
 ## License
 

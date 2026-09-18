@@ -45,9 +45,14 @@ function countChanges(samples) {
   return changes;
 }
 
-function cost({ timeToSolveMs, actions, framesObserved }) {
+function cost({ timeToSolveMs, actions, framesObserved, apiCalls }) {
   return Number(
-    (timeToSolveMs / 1000 + actions * 0.5 + framesObserved * 0.1).toFixed(3),
+    (
+      timeToSolveMs / 1000 +
+      actions * 0.5 +
+      framesObserved * 0.1 +
+      (apiCalls ?? 0) * 0.05
+    ).toFixed(3),
   );
 }
 
@@ -155,7 +160,7 @@ async function runOnce() {
     apiCalls,
     framesObserved,
     actions,
-    automationCost: cost({ timeToSolveMs, actions, framesObserved }),
+    automationCost: cost({ timeToSolveMs, actions, framesObserved, apiCalls }),
     verificationResult: {
       verified: verify.json.verified,
       decision: verify.json.decision,
