@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { clientKeyFromRequest, jsonError, jsonOk } from "@/lib/api/http";
-import { assertLifecycle, posesAtElapsed } from "@/lib/challenge/motion";
+import { assertLifecycle } from "@/lib/challenge/motion";
 import { toFrameResponse } from "@/lib/challenge/public";
 import { isExpired } from "@/lib/security/expiry";
 import { checkRateLimit } from "@/lib/security/rateLimit";
@@ -76,7 +76,7 @@ export async function POST(request: Request) {
 
   const now = new Date();
   const startedAt = challenge.startedAt ?? now.toISOString();
-  const updated = store.updateChallenge(challenge.challengeId, {
+  let updated = store.updateChallenge(challenge.challengeId, {
     lifecycle: "active",
     startedAt,
   });
@@ -85,8 +85,11 @@ export async function POST(request: Request) {
     return jsonError(500, "start_failed");
   }
 
-  // Touch poses helper so tree-shaking keeps motion utilities linked
-  void posesAtElapsed;
+  const frame = toFrameResponse(updated, 0);
+  updated = store.updateChallenge(challenge.challengeId, {
+    lastDisplayPoses: frame.poses,
+    lastDisplayElapsedMs: frame.elapsedMs,
+  })!;
 
-  return jsonOk(toFrameResponse(updated, 0));
+  return jsonOk(frame);
 }

@@ -136,10 +136,18 @@ async function oneRun(browser) {
     const scaleY = box.height / 360;
     await page.mouse.click(box.x + last.x * scaleX, box.y + last.y * scaleY);
     actions += 1;
+  } else if (box) {
+    // Fallback: probe canvas center — still counts as an automation attempt
+    await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+    actions += 1;
   }
 
-  await page.getByTestId("verify-button").click();
-  actions += 1;
+  const verify = page.getByTestId("verify-button");
+  const enabled = await verify.isEnabled().catch(() => false);
+  if (enabled) {
+    await verify.click();
+    actions += 1;
+  }
 
   let success = false;
   try {
@@ -168,7 +176,7 @@ async function oneRun(browser) {
       framesObserved,
     }),
     verificationResult: { verified: success },
-    notes: `selected=${selected}; required=${required}; counts=${JSON.stringify(counts)}`,
+    notes: `selected=${selected}; required=${required}; counts=${JSON.stringify(counts)}; verifyEnabled=${enabled}`,
     createdAt: new Date().toISOString(),
   };
   saveRun(run);

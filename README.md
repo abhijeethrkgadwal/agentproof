@@ -102,11 +102,12 @@ Factors include incorrect answer, failed attempts, retries, too-fast completion,
 
 ## Known limitations
 
-- Motion segments are sent to the browser — a sophisticated client could compute direction changes locally (Phase 2 measures this)
+- Progressive `/frame` poses are visible (required to render) but are display-transformed (quantize/jitter/wobble/EMA); server GT remains authoritative
 - In-memory store resets on process restart; no Redis/Postgres yet
 - Rate limiter is per-process and best-effort
-- Single challenge family; no adaptive sequencing yet
+- Single challenge family; no adaptive sequencing / Jev yet
 - No accessibility alternative challenge path yet
+- Residual adaptive attackers may still exist after light harden — Lab gates quantify them
 
 ## Local development
 
@@ -122,18 +123,21 @@ Open [http://127.0.0.1:43123](http://127.0.0.1:43123).
 
 Health: `GET /api/health` → `{ "status": "ok", "service": "agentproof" }`.
 
-## Agent Lab (Phase 4)
+## Agent Lab (Phase 4+)
 
-Measure automation cost without changing the Phase 3 protocol:
+Measure automation cost. Phase 5 lightly hardens `/frame` display poses (display ≠ GT).
 
 ```bash
 npm run lab:l1 -- http://127.0.0.1:43123 5
 npm run lab:l2
+npm run lab:gates -- http://127.0.0.1:43123
 # Dashboard
 open http://127.0.0.1:43123/lab
 ```
 
 Automation Cost = `timeToSolveMs/1000 + 0.5*actions + 0.1*framesObserved`.
+
+Regression gates cover: offline derivation, frame-trail, direct API, replay, tamper, timing.
 
 
 ## Environment
@@ -143,13 +147,15 @@ See `.env.example`:
 - `AGENTPROOF_SIGNING_SECRET` (required)
 - `DATABASE_URL` (reserved for future Prisma/Postgres)
 - Optional TTL / rate-limit knobs
+- Optional Phase 5 display harden knobs (`AGENTPROOF_DISPLAY_*`)
 
 ## Roadmap
 
-1. **Phase 1 (this repo):** temporal challenge + signed verify loop + risk + tests
-2. **Phase 2:** attacker/red-team evaluation against the challenge (browser agents)
-3. **Phase 3:** adaptive difficulty / sequences
-4. **Phase 4:** platform hardening (WebAuthn option, orgs, durable stores)
+1. **Phase 1:** temporal challenge + signed verify loop + risk + tests
+2. **Phase 2:** attacker/red-team evaluation (offline derive measured)
+3. **Phase 3:** progressive frames + lifecycle + session (offline blocked)
+4. **Phase 4:** Agent Lab (L1/L2/L3 stub) + Automation Cost
+5. **Phase 5:** light `/frame` harden + Lab regression gates (Decision C; Jev later)
 
 ## License
 

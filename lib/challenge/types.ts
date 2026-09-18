@@ -79,6 +79,9 @@ export type StoredChallenge = {
   lifecycle: ChallengeLifecycle;
   startedAt?: string;
   framePollCount: number;
+  /** Last display poses (for EMA smoothing — not ground truth). */
+  lastDisplayPoses?: ObjectPose[];
+  lastDisplayElapsedMs?: number;
   consumed: boolean;
   failedAttempts: number;
 };

@@ -83,11 +83,14 @@ export async function POST(request: Request) {
   }
 
   const elapsedMs = Date.now() - new Date(challenge.startedAt).getTime();
+  const refreshedBase = store.getChallenge(challenge.challengeId)!;
+  const frame = toFrameResponse(refreshedBase, elapsedMs);
   store.updateChallenge(challenge.challengeId, {
     lifecycle: "active",
     framePollCount: challenge.framePollCount + 1,
+    lastDisplayPoses: frame.poses,
+    lastDisplayElapsedMs: frame.elapsedMs,
   });
-  const refreshed = store.getChallenge(challenge.challengeId)!;
 
-  return jsonOk(toFrameResponse(refreshed, elapsedMs));
+  return jsonOk(frame);
 }

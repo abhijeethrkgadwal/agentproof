@@ -3,7 +3,7 @@ import type {
   PublicChallengeResponse,
   StoredChallenge,
 } from "@/lib/challenge/types";
-import { posesAtElapsed } from "@/lib/challenge/motion";
+import { toDisplayPoses } from "@/lib/challenge/displayPose";
 
 /**
  * Issued payload: object identity only — never segments, starts, or
@@ -37,19 +37,24 @@ export function toPublicChallenge(
   };
 }
 
+/**
+ * Progressive frame response — display poses are quantized/jittered,
+ * time-bucketed, and EMA-smoothed so they are not a clean invert of
+ * internal segment math. Ground-truth math stays server-only.
+ */
 export function toFrameResponse(
   challenge: StoredChallenge,
   elapsedMs: number,
 ): FrameResponse {
   const durationMs = challenge.renderConfiguration.durationMs;
-  const capped = Math.max(0, Math.min(elapsedMs, durationMs));
+  const display = toDisplayPoses(challenge, elapsedMs);
   return {
     challengeId: challenge.challengeId,
     lifecycle: challenge.lifecycle,
-    elapsedMs: capped,
+    elapsedMs: display.elapsedMs,
     durationMs,
-    complete: capped >= durationMs,
-    poses: posesAtElapsed(challenge, capped),
+    complete: elapsedMs >= durationMs,
+    poses: display.poses,
     instruction: challenge.renderConfiguration.instruction,
   };
 }
