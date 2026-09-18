@@ -1,0 +1,31 @@
+// Prisma schema scaffold for future Postgres persistence.
+// Phase 1 uses the in-memory ChallengeStore; this models the durable shape.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Challenge {
+  id              String   @id @default(uuid())
+  sessionId       String
+  nonce           String   @unique
+  challengeType   String
+  difficulty      Int
+  issuedAt        DateTime
+  expiresAt       DateTime
+  consumed        Boolean  @default(false)
+  failedAttempts  Int      @default(0)
+  /// Server-only JSON: ground truth must never be returned to clients
+  groundTruth     Json
+  renderConfig    Json
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([sessionId])
+  @@index([expiresAt])
+}
