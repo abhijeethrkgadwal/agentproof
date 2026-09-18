@@ -1,0 +1,29 @@
+[
+  {
+    "projectId": "proj_10752eab483d5ac8",
+    "name": "Phase7 Test",
+    "createdAt": "2026-09-18T12:01:58.900Z",
+    "environments": [
+      "test",
+      "live"
+    ]
+  },
+  {
+    "projectId": "proj_03616c7f64107683",
+    "name": "Phase7 Test",
+    "createdAt": "2026-09-18T12:02:14.127Z",
+    "environments": [
+      "test",
+      "live"
+    ]
+  },
+  {
+    "projectId": "proj_872790d641584059",
+    "name": "Phase7 Test",
+    "createdAt": "2026-09-18T12:07:41.378Z",
+    "environments": [
+      "test",
+      "live"
+    ]
+  }
+]

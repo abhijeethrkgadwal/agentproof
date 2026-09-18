@@ -11,6 +11,50 @@ import {
   VerificationResult,
   type VerificationPayload,
 } from "@/components/agentproof/VerificationResult";
+import type { StudyAggregate } from "@/lib/study/types";
+
+function StudyAggregatePanel() {
+  const [aggregate, setAggregate] = useState<StudyAggregate | null>(null);
+  useEffect(() => {
+    void fetch("/api/study/aggregate")
+      .then((r) => r.json())
+      .then((d) => setAggregate(d.aggregate ?? null))
+      .catch(() => setAggregate(null));
+  }, []);
+  if (!aggregate) {
+    return (
+      <p className="text-xs text-slate-500" data-testid="study-aggregate-loading">
+        Loading aggregate stats…
+      </p>
+    );
+  }
+  return (
+    <div
+      className="rounded border border-slate-800 bg-slate-950/80 p-4 text-sm text-slate-300"
+      data-testid="study-aggregate-panel"
+    >
+      <p className="text-xs text-amber-200/90">{aggregate.label}</p>
+      <ul className="mt-2 grid grid-cols-2 gap-2 font-mono text-xs">
+        <li>participants: {aggregate.participantCount}</li>
+        <li>attempts: {aggregate.attempts}</li>
+        <li>success: {(aggregate.successRate * 100).toFixed(0)}%</li>
+        <li>abandon: {(aggregate.abandonmentRate * 100).toFixed(0)}%</li>
+        <li>
+          median time:{" "}
+          {aggregate.medianCompletionTimeMs === null
+            ? "—"
+            : `${Math.round(aggregate.medianCompletionTimeMs)} ms`}
+        </li>
+        <li>
+          p95 time:{" "}
+          {aggregate.p95CompletionTimeMs === null
+            ? "—"
+            : `${Math.round(aggregate.p95CompletionTimeMs)} ms`}
+        </li>
+      </ul>
+    </div>
+  );
+}
 
 type Phase =
   | "consent"
@@ -410,19 +454,21 @@ export default function StudyPage() {
 
         {phase === "done" ? (
           <section
-            className="rounded-md border border-slate-800 bg-slate-950/60 p-6"
+            className="space-y-4 rounded-md border border-slate-800 bg-slate-950/60 p-6"
             data-testid="study-done"
           >
             <p className="text-slate-200">
               {message ?? "Thank you for participating."}
             </p>
-            <p className="mt-2 text-sm text-slate-500">
-              Individual results are not shown publicly. Aggregates appear on
-              the Agent Lab dashboard under Human Observations.
+            <p className="text-sm text-slate-500">
+              Individual results are not shown publicly. Aggregates below (and on
+              the Agent Lab dashboard) are labeled as an observational pilot —
+              not a scientific human-performance study.
             </p>
+            <StudyAggregatePanel />
             <Link
               href="/lab"
-              className="mt-4 inline-block text-cyan-400 hover:underline"
+              className="mt-2 inline-block text-cyan-400 hover:underline"
             >
               View Lab aggregates
             </Link>

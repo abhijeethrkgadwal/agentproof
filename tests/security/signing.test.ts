@@ -76,19 +76,19 @@ describe("expiration", () => {
 });
 
 describe("replay prevention", () => {
-  it("marks challenges consumed and rejects replay", () => {
+  it("marks challenges consumed and rejects replay", async () => {
     const store = new InMemoryChallengeStore();
     const challenge = generateTemporalChallenge({ difficulty: 1 });
-    store.createChallenge(challenge);
-    expect(assertNotConsumed(store, challenge.challengeId)).toEqual({
+    await store.createChallenge(challenge);
+    expect(await assertNotConsumed(store, challenge.challengeId)).toEqual({
       ok: true,
     });
-    expect(store.consumeChallenge(challenge.challengeId)).toBe(true);
-    expect(store.isConsumed(challenge.challengeId)).toBe(true);
-    expect(assertNotConsumed(store, challenge.challengeId)).toEqual({
+    expect(await store.consumeChallenge(challenge.challengeId)).toBe(true);
+    expect(await store.isConsumed(challenge.challengeId)).toBe(true);
+    expect(await assertNotConsumed(store, challenge.challengeId)).toEqual({
       ok: false,
       error: "replay",
     });
-    expect(store.consumeChallenge(challenge.challengeId)).toBe(false);
+    expect(await store.consumeChallenge(challenge.challengeId)).toBe(false);
   });
 });

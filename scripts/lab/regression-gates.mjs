@@ -230,7 +230,7 @@ async function main() {
       : "replay_tampering missing",
   );
 
-  // Measurement-only reporting (always "pass" as informational gates)
+  // Measurement-only reporting
   gate(
     "measure_frame_reconstruction_v2",
     true,
@@ -247,6 +247,27 @@ async function main() {
     `attacker_success=${directA?.success ?? "n/a"}`,
   );
 
+  // Phase 7: polling residual suppressed — sample multiple batches.
+  // Exact attacker unchanged; shotgun of 3 intervals ≈ chance among ~7 objects.
+  // Require ≤1/5 batch successes (≤20%), vs Phase 6 single-run residual pass.
+  console.log("\nSampling polling_optimisation × 5…");
+  const pollSamples = [];
+  for (let i = 0; i < 5; i += 1) {
+    const one = await post("/api/lab/v2", {
+      attack: "polling_optimisation",
+      difficulty: 1,
+    });
+    const run = one.json.runs?.[0];
+    pollSamples.push(Boolean(run?.success));
+    console.log(`  sample ${i + 1}: success=${run?.success}`);
+  }
+  const pollHits = pollSamples.filter(Boolean).length;
+  gate(
+    "polling_optimisation_suppressed",
+    pollHits <= 1,
+    `batchSuccesses=${pollHits}/5 (threshold<=1); samples=${pollSamples.join(",")}`,
+  );
+
   const hardGates = results.filter(
     (r) => !r.name.startsWith("measure_"),
   );
@@ -258,6 +279,10 @@ async function main() {
   };
 
   mkdirSync(OUT_DIR, { recursive: true });
+  writeFileSync(
+    join(OUT_DIR, "phase-7-regression-gates.json"),
+    JSON.stringify(summary, null, 2),
+  );
   writeFileSync(
     join(OUT_DIR, "phase-6-regression-gates.json"),
     JSON.stringify(summary, null, 2),

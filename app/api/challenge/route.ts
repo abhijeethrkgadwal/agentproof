@@ -5,15 +5,18 @@ import { toPublicChallenge } from "@/lib/challenge/public";
 import { signChallengeToken } from "@/lib/security/signing";
 import { checkRateLimit } from "@/lib/security/rateLimit";
 import {
-  createSessionId,
+  getSessionStore,
+  getSessionTtlMsFromEnv,
   sessionCookieHeader,
+  signSessionToken,
 } from "@/lib/security/session";
 import { getChallengeStore } from "@/lib/storage/challengeStore";
+import { randomBytes } from "crypto";
 
 export const runtime = "nodejs";
 
 export async function POST(request: Request) {
-  const rate = checkRateLimit(`challenge:${clientKeyFromRequest(request)}`);
+  const rate = await checkRateLimit(`challenge:${clientKeyFromRequest(request)}`);
   if (!rate.allowed) {
     return jsonError(429, "rate_limited", {
       retryAfterMs: rate.retryAfterMs,
@@ -36,15 +39,25 @@ export async function POST(request: Request) {
 
   try {
     const store = getChallengeStore();
-    store.purgeExpired();
+    await store.purgeExpired();
 
-    const sessionId = parsed.data.sessionId ?? createSessionId();
+    const sessionId = parsed.data.sessionId ?? randomBytes(16).toString("hex");
+    const now = Date.now();
+    const expiresAt = now + getSessionTtlMsFromEnv();
+    await getSessionStore().put({
+      sessionId,
+      issuedAt: now,
+      expiresAt,
+      environment: parsed.data.environment === "live" ? "live" : "test",
+      projectId: parsed.data.projectId,
+    });
+
     const challenge = generateTemporalChallenge({
       difficulty: parsed.data.difficulty,
       sessionId,
     });
 
-    store.createChallenge(challenge);
+    await store.createChallenge(challenge);
 
     const token = signChallengeToken({
       challengeId: challenge.challengeId,
@@ -57,7 +70,10 @@ export async function POST(request: Request) {
     });
 
     const response = jsonOk(toPublicChallenge(challenge, token));
-    response.headers.set("Set-Cookie", sessionCookieHeader(challenge.sessionId));
+    response.headers.set(
+      "Set-Cookie",
+      sessionCookieHeader(signSessionToken(sessionId, expiresAt)),
+    );
     return response;
   } catch (error) {
     const message = error instanceof Error ? error.message : "server_error";

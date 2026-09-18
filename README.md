@@ -2,101 +2,20 @@
 
 Adaptive verification for the agentic web.
 
-AgentProof is a research prototype that issues dynamic interaction challenges, keeps ground truth on the server, signs challenge metadata, prevents replay, collects minimal telemetry, and returns an explainable **interaction risk score** with an allow / step_up / restrict decision.
+AgentProof issues dynamic interaction challenges, keeps ground truth on the server, signs challenge + session metadata, prevents replay, and returns an explainable **interaction risk score** (`allow` / `step_up` / `restrict`).
 
-**Important:** AgentProof does **not** claim to be “AI-proof” or to prove that a user is human. The goal is adaptive, measurable resistance to automated interaction — making abuse more expensive and less reliable while remaining low-friction for legitimate users.
+**Important:** AgentProof does **not** claim to be “AI-proof” or to prove that a user is human.
 
-## Phase 6 objectives
+## Phase 7 highlights
 
-- Real **human study** observational pilot at `/study` (anonymous, consent-gated)
-- **Agent Lab V2** attacks A–F with persisted attack runs
-- Normalized **feature snapshots** + `DecisionEngine` / `RuleDecisionEngine` (no ML / Jev)
-- Regression gates for blocked security properties
-- Pilot accessibility path (not a full WCAG audit)
+- Polling-optimisation residual suppressed (display lag + path contamination + GT-biased warp that survives adaptive low-pass)
+- Storage abstractions: memory (default) or Redis (`AGENTPROOF_STORAGE_BACKEND=redis`)
+- Signed short-lived sessions (`agentproof_sid` HMAC cookie + SessionStore)
+- Adaptive `RuleDecisionEngine` (timing / retries / cadence / interaction rules) — no ML / Jev
+- Developer projects + API keys + embeddable SDK (`/agentproof-sdk.js`)
+- Study aggregate panel + accessibility notes
 
-Docs: [`docs/human-study.md`](docs/human-study.md) · [`docs/agent-lab.md`](docs/agent-lab.md) · [`docs/threat-model.md`](docs/threat-model.md)
-
-## Architecture
-
-```text
-Browser (untrusted)                 Server (authoritative)
-─────────────────                   ──────────────────────
-POST /api/challenge          ────>  Issue scene identity + cookie
-POST /api/challenge/start    ────>  lifecycle → active
-POST /api/challenge/frame    ────>  display poses (≠ exact GT math)
-POST /api/verify             ────>  GT check SEPARATE from DecisionEngine
-                             <────  allow | step_up | restrict
-                                    + feature snapshot stored
-```
-
-## Human study methodology
-
-See [`docs/human-study.md`](docs/human-study.md). Label all results:
-
-> Observational pilot — not a scientific human-performance study.
-
-Aggregates only via `/api/study/aggregate`. No public individual rows. No PII.
-
-## Agent Lab V2 & attack methodology
-
-See [`docs/agent-lab.md`](docs/agent-lab.md).
-
-```bash
-npm run lab:l1 -- http://127.0.0.1:43123 5
-npm run lab:l2
-npm run lab:v2 -- http://127.0.0.1:43123 all
-npm run lab:gates -- http://127.0.0.1:43123
-```
-
-Dashboard `/lab` separates **HUMAN OBSERVATIONS** (study) from **AUTOMATED ATTACKS**.
-
-## Automation Cost definition
-
-Normalized **experimental** metric — **not** a universal security score:
-
-```text
-AutomationCost =
-  timeToSolveMs/1000
-  + 0.5 * interactionCount
-  + 0.1 * framesObserved
-  + 0.05 * apiRequestCount
-```
-
-Defined in `lib/lab/types.ts` (`computeAutomationCost`, `AUTOMATION_COST_FORMULA`).
-
-## Risk / decision engine
-
-Ground-truth answer checks stay separate from risk. Scoring goes through:
-
-- `DecisionEngine` interface (`lib/decision/types.ts`)
-- `RuleDecisionEngine` (`lib/decision/ruleEngine.ts`) — deterministic rules only
-
-Feature snapshots (`lib/features/*`) enable future engines without protocol changes. **No Jev / external AI in Phase 6.**
-
-## Current security posture
-
-| Property | Status |
-|----------|--------|
-| Offline derivation | Blocked |
-| Static payload GT extraction | Blocked |
-| Replay / tamper | Blocked |
-| Premature / expired verify | Blocked |
-| Frame-trail automation | Residual; measured by Lab V2 |
-
-## Privacy principles
-
-Minimal telemetry. No browser fingerprinting, keystroke logging, clipboard collection, precise location, facial recognition, or unnecessary device identifiers.
-
-## Known limitations / what remains unsolved
-
-- Adaptive trail filters may still recover direction changes
-- L3 vision agents are stub-only
-- Human-farm economics unmodeled
-- Accessibility path is pilot-grade (not a complete WCAG audit)
-- Single challenge family; no adaptive sequencing yet
-- In-memory stores (lab/study/features) — not multi-instance durable
-
-## Local development
+## Quick start
 
 ```bash
 cp .env.example .env.local
@@ -106,20 +25,49 @@ npm install
 npm run dev -- --port 43123 --hostname 127.0.0.1
 ```
 
-- Demo: [http://127.0.0.1:43123/demo](http://127.0.0.1:43123/demo)
-- Study: [http://127.0.0.1:43123/study](http://127.0.0.1:43123/study)
-- Lab: [http://127.0.0.1:43123/lab](http://127.0.0.1:43123/lab)
-- Accessible: [http://127.0.0.1:43123/demo/accessible](http://127.0.0.1:43123/demo/accessible)
+- [Demo](http://127.0.0.1:43123/demo) · [Study](http://127.0.0.1:43123/study) · [Lab](http://127.0.0.1:43123/lab)
+- [Accessible](http://127.0.0.1:43123/demo/accessible) · [SDK example](http://127.0.0.1:43123/examples/integration.html)
+
+## Architecture
+
+```text
+Browser                     Server
+──────                     ──────
+POST /api/challenge  ────> signed session cookie + issued identity
+POST /start,/frame   ────> progressive display poses (≠ GT math)
+POST /api/verify     ────> GT check ⟂ DecisionEngine(features)
+                     <──── verified + decision + risk factors
+```
+
+Multi-process: set `AGENTPROOF_STORAGE_BACKEND=redis` and `AGENTPROOF_REDIS_URL`.
+
+## Automation Cost
+
+Experimental metric only:
+
+`timeToSolveMs/1000 + 0.5*interactionCount + 0.1*framesObserved + 0.05*apiRequestCount`
+
+## Docs
+
+- [`docs/developer-integration.md`](docs/developer-integration.md)
+- [`docs/agent-lab.md`](docs/agent-lab.md)
+- [`docs/human-study.md`](docs/human-study.md)
+- [`docs/threat-model.md`](docs/threat-model.md)
+- [`docs/accessibility.md`](docs/accessibility.md)
+
+## Tests
+
+```bash
+npm test && npm run lint && npm run build
+PLAYWRIGHT_PORT=43123 npm run test:e2e
+npm run lab:gates -- http://127.0.0.1:43123
+```
 
 ## Roadmap
 
-1. Phase 1 — temporal challenge + signed verify + risk  
-2. Phase 2 — attack measurement (offline derive)  
-3. Phase 3 — progressive frames + lifecycle + session  
-4. Phase 4 — Agent Lab L1/L2/L3 stub  
-5. Phase 5 — light `/frame` harden + gates (Decision C)  
-6. **Phase 6 — human study + Lab V2 + DecisionEngine** (this)  
-7. Phase 7 — *not started* (adaptive policy / optional later Jev — out of scope here)
+1–6 delivered (challenge → Lab V2 → human study).  
+7 — production hardening + residual suppress (this).  
+8 — not started.
 
 ## License
 

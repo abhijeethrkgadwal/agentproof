@@ -4,8 +4,13 @@ import { POST as startChallenge } from "@/app/api/challenge/start/route";
 import { POST as verifyChallenge } from "@/app/api/verify/route";
 import { getChallengeStore } from "@/lib/storage/challengeStore";
 import { resetRateLimits } from "@/lib/security/rateLimit";
-import { SESSION_COOKIE } from "@/lib/security/session";
+import {
+  InMemorySessionStore,
+  SESSION_COOKIE,
+  setSessionStoreForTests,
+} from "@/lib/security/session";
 import { listFeatureSnapshots } from "@/lib/features/store";
+
 
 function jsonRequest(url: string, body: unknown, cookie?: string): Request {
   const headers: Record<string, string> = {
@@ -28,12 +33,13 @@ function sidCookie(response: Response): string {
 
 describe("Phase 6 verify extras", () => {
   beforeEach(() => {
-    getChallengeStore().clear();
+    setSessionStoreForTests(new InMemorySessionStore());
+    void getChallengeStore().clear();
     resetRateLimits();
   });
 
   afterEach(() => {
-    getChallengeStore().clear();
+    void getChallengeStore().clear();
     resetRateLimits();
   });
 
@@ -50,7 +56,7 @@ describe("Phase 6 verify extras", () => {
         cookie,
       ),
     );
-    getChallengeStore().updateChallenge(challenge.challengeId, {
+    await getChallengeStore().updateChallenge(challenge.challengeId, {
       expiresAt: new Date(Date.now() - 1000).toISOString(),
       startedAt: new Date(Date.now() - 6000).toISOString(),
     });
@@ -113,10 +119,10 @@ describe("Phase 6 verify extras", () => {
         cookie,
       ),
     );
-    getChallengeStore().updateChallenge(challenge.challengeId, {
+    await getChallengeStore().updateChallenge(challenge.challengeId, {
       startedAt: new Date(Date.now() - 5000).toISOString(),
     });
-    const stored = getChallengeStore().getChallenge(challenge.challengeId)!;
+    const stored = (await getChallengeStore().getChallenge(challenge.challengeId))!;
     const verify = await verifyChallenge(
       jsonRequest(
         "http://localhost/api/verify",

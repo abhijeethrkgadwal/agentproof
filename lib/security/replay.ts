@@ -1,10 +1,10 @@
 import type { ChallengeStore } from "@/lib/storage/challengeStore";
 
-export function assertNotConsumed(
+export async function assertNotConsumed(
   store: ChallengeStore,
   challengeId: string,
-): { ok: true } | { ok: false; error: "replay" } {
-  if (store.isConsumed(challengeId)) {
+): Promise<{ ok: true } | { ok: false; error: "replay" }> {
+  if (await store.isConsumed(challengeId)) {
     return { ok: false, error: "replay" };
   }
   return { ok: true };

@@ -4,7 +4,7 @@ import { assertLifecycle } from "@/lib/challenge/motion";
 import { toFrameResponse } from "@/lib/challenge/public";
 import { isExpired } from "@/lib/security/expiry";
 import { checkRateLimit } from "@/lib/security/rateLimit";
-import { getSessionIdFromRequest } from "@/lib/security/session";
+import { resolveRequestSession } from "@/lib/security/session";
 import { verifyChallengeToken } from "@/lib/security/signing";
 import { getChallengeStore } from "@/lib/storage/challengeStore";
 
@@ -20,7 +20,7 @@ const FrameSchema = z.object({
  * Clients cannot fetch the future motion plan.
  */
 export async function POST(request: Request) {
-  const rate = checkRateLimit(`frame:${clientKeyFromRequest(request)}`);
+  const rate = await checkRateLimit(`frame:${clientKeyFromRequest(request)}`);
   if (!rate.allowed) {
     return jsonError(429, "rate_limited", { retryAfterMs: rate.retryAfterMs });
   }
@@ -47,9 +47,13 @@ export async function POST(request: Request) {
     return jsonError(400, "challenge_id_mismatch");
   }
 
-  const sessionCookie = getSessionIdFromRequest(request);
+  const session = await resolveRequestSession(request);
+  if (!session.ok) {
+    return jsonError(403, session.error);
+  }
+
   const store = getChallengeStore();
-  const challenge = store.getChallenge(parsed.data.challengeId);
+  const challenge = await store.getChallenge(parsed.data.challengeId);
   if (!challenge) {
     return jsonError(404, "challenge_not_found");
   }
@@ -61,7 +65,7 @@ export async function POST(request: Request) {
     return jsonError(401, "invalid_signature");
   }
 
-  if (sessionCookie !== challenge.sessionId) {
+  if (session.sessionId !== challenge.sessionId) {
     return jsonError(403, "session_mismatch");
   }
 
@@ -83,9 +87,9 @@ export async function POST(request: Request) {
   }
 
   const elapsedMs = Date.now() - new Date(challenge.startedAt).getTime();
-  const refreshedBase = store.getChallenge(challenge.challengeId)!;
+  const refreshedBase = (await store.getChallenge(challenge.challengeId))!;
   const frame = toFrameResponse(refreshedBase, elapsedMs);
-  store.updateChallenge(challenge.challengeId, {
+  await store.updateChallenge(challenge.challengeId, {
     lifecycle: "active",
     framePollCount: challenge.framePollCount + 1,
     lastDisplayPoses: frame.poses,

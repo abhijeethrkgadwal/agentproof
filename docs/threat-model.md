@@ -22,7 +22,18 @@ AgentProof assesses **interaction risk** for a session. It does **not** claim to
 - External ML / Jev integration (deferred)
 - Complete WCAG conformance audit
 
-## Security posture (Phase 6)
+## Deployment architecture (Phase 7)
+
+```text
+Next.js (one or more nodes)
+  ├─ memory stores          (local / CI)
+  └─ Redis (optional)       challenge + session + rate-limit
+       AGENTPROOF_STORAGE_BACKEND=redis
+       AGENTPROOF_REDIS_URL=redis://…
+```
+
+Signed sessions + shared Redis are required for correct replay protection across processes.
+
 
 | Property | Status |
 |----------|--------|
