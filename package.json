@@ -16,9 +16,15 @@
     "lab:l1": "node scripts/lab/run-l1.mjs",
     "lab:l2": "node scripts/lab/run-l2.mjs",
     "lab:v2": "node scripts/lab/run-lab-v2.mjs",
-    "lab:gates": "node scripts/lab/regression-gates.mjs"
+    "lab:gates": "node scripts/lab/regression-gates.mjs",
+    "lab:benchmark": "node scripts/lab/final-benchmark.mjs",
+    "soak:redis": "node scripts/soak/redis-soak.mjs",
+    "study:recruit": "node scripts/study/recruitment.mjs",
+    "a11y:validate": "node scripts/a11y/validate.mjs",
+    "security:sdk-review": "node scripts/security/sdk-review.mjs"
   },
   "dependencies": {
+    "ioredis": "^5.11.1",
     "next": "16.3.5",
     "react": "19.2.8",
     "react-dom": "19.2.8",

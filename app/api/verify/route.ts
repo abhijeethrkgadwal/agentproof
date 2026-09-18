@@ -7,7 +7,7 @@ import { appendFeatureSnapshot } from "@/lib/features/store";
 import { ageMs, isExpired } from "@/lib/security/expiry";
 import { checkRateLimit } from "@/lib/security/rateLimit";
 import { assertNotConsumed } from "@/lib/security/replay";
-import { getSessionIdFromRequest } from "@/lib/security/session";
+import { resolveRequestSession } from "@/lib/security/session";
 import { verifyChallengeToken } from "@/lib/security/signing";
 import { getChallengeStore } from "@/lib/storage/challengeStore";
 import { sanitizeTelemetry } from "@/lib/telemetry/sanitize";
@@ -20,7 +20,7 @@ function minActiveMs(durationMs: number): number {
 }
 
 export async function POST(request: Request) {
-  const rate = checkRateLimit(`verify:${clientKeyFromRequest(request)}`);
+  const rate = await checkRateLimit(`verify:${clientKeyFromRequest(request)}`);
   if (!rate.allowed) {
     return jsonError(429, "rate_limited", {
       retryAfterMs: rate.retryAfterMs,
@@ -45,7 +45,6 @@ export async function POST(request: Request) {
 
   const { challengeId, token, selectedObjectId } = parsed.data;
   const telemetry = sanitizeTelemetry(parsed.data.telemetry);
-  const sessionCookie = getSessionIdFromRequest(request);
 
   const tokenResult = verifyChallengeToken(token);
   if (!tokenResult.ok) {
@@ -57,8 +56,13 @@ export async function POST(request: Request) {
     return jsonError(400, "challenge_id_mismatch");
   }
 
+  const session = await resolveRequestSession(request);
+  if (!session.ok) {
+    return jsonError(403, session.error);
+  }
+
   const store = getChallengeStore();
-  const challenge = store.getChallenge(challengeId);
+  const challenge = await store.getChallenge(challengeId);
   if (!challenge) {
     return jsonError(404, "challenge_not_found");
   }
@@ -67,8 +71,7 @@ export async function POST(request: Request) {
     return jsonError(401, "invalid_signature");
   }
 
-  const sessionBound = sessionCookie === challenge.sessionId;
-  if (!sessionBound) {
+  if (session.sessionId !== challenge.sessionId) {
     return jsonError(403, "session_mismatch");
   }
 
@@ -76,7 +79,7 @@ export async function POST(request: Request) {
     return jsonError(410, "challenge_expired");
   }
 
-  const replay = assertNotConsumed(store, challengeId);
+  const replay = await assertNotConsumed(store, challengeId);
   if (!replay.ok) {
     return jsonError(409, "replay");
   }
@@ -112,8 +115,8 @@ export async function POST(request: Request) {
   const frameCount = challenge.framePollCount;
 
   if (!answer.correct) {
-    store.incrementFailedAttempts(challengeId);
-    store.consumeChallenge(challengeId);
+    await store.incrementFailedAttempts(challengeId);
+    await store.consumeChallenge(challengeId);
 
     const draft = createFeatureSnapshot({
       challengeType: challenge.challengeType,
@@ -147,7 +150,7 @@ export async function POST(request: Request) {
     });
   }
 
-  store.consumeChallenge(challengeId);
+  await store.consumeChallenge(challengeId);
 
   const draft = createFeatureSnapshot({
     challengeType: challenge.challengeType,

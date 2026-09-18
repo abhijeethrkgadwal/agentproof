@@ -44,9 +44,14 @@ npm run lab:l1 -- http://127.0.0.1:43123 5
 npm run lab:l2
 npm run lab:v2 -- http://127.0.0.1:43123 all
 npm run lab:gates -- http://127.0.0.1:43123
+npm run lab:benchmark -- http://127.0.0.1:43123
 ```
 
 Dashboard: `/lab`
+
+## Phase 8 final benchmark
+
+`npm run lab:benchmark` writes `phase-8-final-benchmark.json`: live security checks, Lab V2 Automation Cost rows, human aggregates (separated), and pointers to historical Phase 2–7 artifacts. Does **not** claim AI-proof.
 
 ## Attack run schema
 

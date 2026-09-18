@@ -33,3 +33,19 @@ export function getRateLimitWindowMs(): number {
 export function getRateLimitMaxRequests(): number {
   return Number(process.env.AGENTPROOF_RATE_LIMIT_MAX ?? 60);
 }
+
+/** memory (default) | redis */
+export function getStorageBackend(): "memory" | "redis" {
+  const raw = (process.env.AGENTPROOF_STORAGE_BACKEND ?? "memory").toLowerCase();
+  return raw === "redis" ? "redis" : "memory";
+}
+
+export function getRedisUrl(): string | undefined {
+  const url = process.env.AGENTPROOF_REDIS_URL ?? process.env.REDIS_URL;
+  return url && url.trim() ? url.trim() : undefined;
+}
+
+export function getSessionTtlMs(): number {
+  const raw = Number(process.env.AGENTPROOF_SESSION_TTL_MS ?? "120000");
+  return Number.isFinite(raw) && raw >= 10_000 ? raw : 120_000;
+}

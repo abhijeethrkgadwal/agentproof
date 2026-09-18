@@ -7,8 +7,10 @@ import { GET as health } from "@/app/api/health/route";
 import { publicPayloadLeaksMotion } from "@/lib/challenge/public";
 import { getChallengeStore } from "@/lib/storage/challengeStore";
 import { resetRateLimits } from "@/lib/security/rateLimit";
-import { signChallengeToken } from "@/lib/security/signing";
+import { setSessionStoreForTests, InMemorySessionStore } from "@/lib/security/session";
 import { SESSION_COOKIE } from "@/lib/security/session";
+import { signChallengeToken } from "@/lib/security/signing";
+
 
 function jsonRequest(url: string, body: unknown, cookie?: string): Request {
   const headers: Record<string, string> = {
@@ -52,28 +54,61 @@ async function startAndBackdate(
   );
   expect(started.status).toBe(200);
   const startedAt = new Date(Date.now() - activeMs).toISOString();
-  getChallengeStore().updateChallenge(challenge.challengeId, { startedAt });
+  await getChallengeStore().updateChallenge(challenge.challengeId, { startedAt });
   return started;
 }
 
 describe("API routes (Phase 3 protocol)", () => {
   beforeEach(() => {
-    getChallengeStore().clear();
+    setSessionStoreForTests(new InMemorySessionStore());
+    void getChallengeStore().clear();
     resetRateLimits();
   });
 
   afterEach(() => {
-    getChallengeStore().clear();
+    void getChallengeStore().clear();
     resetRateLimits();
   });
 
   it("health returns ok", async () => {
     const response = await health();
     expect(response.status).toBe(200);
-    expect(await response.json()).toEqual({
+    const body = await response.json();
+    expect(body).toMatchObject({
       status: "ok",
       service: "agentproof",
     });
+    expect(body.label).toContain("not production security");
+    expect(body.storage).toBeDefined();
+  });
+
+  it("rejects invalid API keys on challenge issue", async () => {
+    const response = await createChallenge(
+      new Request("http://localhost/api/challenge", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-AgentProof-Key": "ap_test_invalidkeyinvalidkeyinvalid12",
+        },
+        body: JSON.stringify({ difficulty: 1 }),
+      }),
+    );
+    expect(response.status).toBe(401);
+    const body = await response.json();
+    expect(body.error).toBe("invalid_api_key");
+  });
+
+  it("requires API key for live environment", async () => {
+    const response = await createChallenge(
+      new Request("http://localhost/api/challenge", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ difficulty: 1, environment: "live" }),
+      }),
+    );
+    expect(response.status).toBe(401);
+    const body = await response.json();
+    expect(body.error).toBe("api_key_required_for_live");
   });
 
   it("issues a challenge without motion leakage", async () => {
@@ -92,7 +127,7 @@ describe("API routes (Phase 3 protocol)", () => {
 
   it("rejects verify before start (invalid lifecycle)", async () => {
     const { challenge, cookie } = await issue();
-    const stored = getChallengeStore().getChallenge(challenge.challengeId)!;
+    const stored = (await getChallengeStore().getChallenge(challenge.challengeId))!;
     const response = await verifyChallenge(
       jsonRequest(
         "http://localhost/api/verify",
@@ -119,7 +154,7 @@ describe("API routes (Phase 3 protocol)", () => {
       }),
     );
     expect(response.status).toBe(403);
-    expect((await response.json()).error).toBe("session_mismatch");
+    expect((await response.json()).error).toBe("session_missing");
   });
 
   it("rejects frame before start", async () => {
@@ -137,7 +172,7 @@ describe("API routes (Phase 3 protocol)", () => {
 
   it("verifies a correct answer after active window and rejects replay", async () => {
     const { challenge, cookie } = await issue();
-    const stored = getChallengeStore().getChallenge(challenge.challengeId)!;
+    const stored = (await getChallengeStore().getChallenge(challenge.challengeId))!;
     await startAndBackdate(
       challenge,
       cookie,
@@ -197,7 +232,7 @@ describe("API routes (Phase 3 protocol)", () => {
 
   it("rejects incorrect answers", async () => {
     const { challenge, cookie } = await issue();
-    const stored = getChallengeStore().getChallenge(challenge.challengeId)!;
+    const stored = (await getChallengeStore().getChallenge(challenge.challengeId))!;
     await startAndBackdate(
       challenge,
       cookie,
@@ -227,7 +262,7 @@ describe("API routes (Phase 3 protocol)", () => {
 
   it("rejects invalid signatures and malformed tokens", async () => {
     const { challenge, cookie } = await issue();
-    const stored = getChallengeStore().getChallenge(challenge.challengeId)!;
+    const stored = (await getChallengeStore().getChallenge(challenge.challengeId))!;
     await startAndBackdate(
       challenge,
       cookie,
@@ -281,7 +316,7 @@ describe("API routes (Phase 3 protocol)", () => {
 
   it("rejects expired challenges", async () => {
     const { challenge, cookie } = await issue();
-    const stored = getChallengeStore().getChallenge(challenge.challengeId)!;
+    const stored = (await getChallengeStore().getChallenge(challenge.challengeId))!;
     stored.expiresAt = new Date(Date.now() - 1000).toISOString();
     getChallengeStore().deleteChallenge(challenge.challengeId);
     getChallengeStore().createChallenge({
@@ -345,7 +380,7 @@ describe("API routes (Phase 3 protocol)", () => {
 
   it("rejects premature submit before min active window", async () => {
     const { challenge, cookie } = await issue();
-    const stored = getChallengeStore().getChallenge(challenge.challengeId)!;
+    const stored = (await getChallengeStore().getChallenge(challenge.challengeId))!;
     await startChallenge(
       jsonRequest(
         "http://localhost/api/challenge/start",

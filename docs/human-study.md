@@ -4,11 +4,21 @@
 
 Collect an honest **observational pilot** baseline of legitimate users solving AgentProof temporal challenges, for comparison with Agent Lab automation metrics.
 
-## Label (required)
+## Labels (required)
 
 > Observational pilot — not a scientific human-performance study.
 
+> Research/portfolio prototype — not production security infrastructure.
+
 Do not use these results as product claims of human performance or “AI-proof” verification.
+
+## Recruitment (Phase 8)
+
+```bash
+npm run study:recruit
+```
+
+Produces `phase-8-recruitment-invite.md` + `phase-8-human-pilot-ops.json`. Target **30–50** voluntary participants; if fewer complete, report **honest N** (never fabricate).
 
 ## Flow (`/study`)
 

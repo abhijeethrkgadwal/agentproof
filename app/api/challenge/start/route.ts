@@ -4,7 +4,7 @@ import { assertLifecycle } from "@/lib/challenge/motion";
 import { toFrameResponse } from "@/lib/challenge/public";
 import { isExpired } from "@/lib/security/expiry";
 import { checkRateLimit } from "@/lib/security/rateLimit";
-import { getSessionIdFromRequest } from "@/lib/security/session";
+import { resolveRequestSession } from "@/lib/security/session";
 import { verifyChallengeToken } from "@/lib/security/signing";
 import { getChallengeStore } from "@/lib/storage/challengeStore";
 
@@ -16,7 +16,7 @@ const StartSchema = z.object({
 });
 
 export async function POST(request: Request) {
-  const rate = checkRateLimit(`start:${clientKeyFromRequest(request)}`);
+  const rate = await checkRateLimit(`start:${clientKeyFromRequest(request)}`);
   if (!rate.allowed) {
     return jsonError(429, "rate_limited", { retryAfterMs: rate.retryAfterMs });
   }
@@ -43,9 +43,13 @@ export async function POST(request: Request) {
     return jsonError(400, "challenge_id_mismatch");
   }
 
-  const sessionCookie = getSessionIdFromRequest(request);
+  const session = await resolveRequestSession(request);
+  if (!session.ok) {
+    return jsonError(403, session.error);
+  }
+
   const store = getChallengeStore();
-  const challenge = store.getChallenge(parsed.data.challengeId);
+  const challenge = await store.getChallenge(parsed.data.challengeId);
   if (!challenge) {
     return jsonError(404, "challenge_not_found");
   }
@@ -57,7 +61,7 @@ export async function POST(request: Request) {
     return jsonError(401, "invalid_signature");
   }
 
-  if (sessionCookie !== challenge.sessionId) {
+  if (session.sessionId !== challenge.sessionId) {
     return jsonError(403, "session_mismatch");
   }
 
@@ -76,7 +80,7 @@ export async function POST(request: Request) {
 
   const now = new Date();
   const startedAt = challenge.startedAt ?? now.toISOString();
-  let updated = store.updateChallenge(challenge.challengeId, {
+  let updated = await store.updateChallenge(challenge.challengeId, {
     lifecycle: "active",
     startedAt,
   });
@@ -86,10 +90,10 @@ export async function POST(request: Request) {
   }
 
   const frame = toFrameResponse(updated, 0);
-  updated = store.updateChallenge(challenge.challengeId, {
+  updated = (await store.updateChallenge(challenge.challengeId, {
     lastDisplayPoses: frame.poses,
     lastDisplayElapsedMs: frame.elapsedMs,
-  })!;
+  }))!;
 
   return jsonOk(frame);
 }

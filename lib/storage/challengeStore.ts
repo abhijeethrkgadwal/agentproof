@@ -1,24 +1,26 @@
 /**
- * In-memory challenge store for local MVP.
- * Interface is Redis/Postgres-ready for later backends.
+ * Challenge store — memory (local/tests) or Redis (multi-process).
+ * Methods may be sync or async; callers always await.
  */
 import type { StoredChallenge } from "@/lib/challenge/types";
+import { getStorageBackend } from "@/lib/config/env";
 
 export interface ChallengeStore {
-  createChallenge(challenge: StoredChallenge): void;
-  getChallenge(challengeId: string): StoredChallenge | undefined;
-  /** Mutate stored challenge (lifecycle, counters). Returns updated copy. */
+  createChallenge(challenge: StoredChallenge): Promise<void> | void;
+  getChallenge(
+    challengeId: string,
+  ): Promise<StoredChallenge | undefined> | StoredChallenge | undefined;
   updateChallenge(
     challengeId: string,
     patch: Partial<StoredChallenge>,
-  ): StoredChallenge | undefined;
-  consumeChallenge(challengeId: string): boolean;
-  isConsumed(challengeId: string): boolean;
-  incrementFailedAttempts(challengeId: string): number;
-  deleteChallenge(challengeId: string): void;
-  purgeExpired(now?: Date): number;
-  clear(): void;
-  size(): number;
+  ): Promise<StoredChallenge | undefined> | StoredChallenge | undefined;
+  consumeChallenge(challengeId: string): Promise<boolean> | boolean;
+  isConsumed(challengeId: string): Promise<boolean> | boolean;
+  incrementFailedAttempts(challengeId: string): Promise<number> | number;
+  deleteChallenge(challengeId: string): Promise<void> | void;
+  purgeExpired(now?: Date): Promise<number> | number;
+  clear(): Promise<void> | void;
+  size(): Promise<number> | number;
 }
 
 function cloneChallenge(found: StoredChallenge): StoredChallenge {
@@ -107,7 +109,7 @@ export class InMemoryChallengeStore implements ChallengeStore {
 }
 
 declare global {
-  var __agentproofChallengeStore: InMemoryChallengeStore | undefined;
+  var __agentproofChallengeStore: ChallengeStore | undefined;
 }
 
 export function getChallengeStore(): ChallengeStore {
@@ -115,4 +117,45 @@ export function getChallengeStore(): ChallengeStore {
     globalThis.__agentproofChallengeStore = new InMemoryChallengeStore();
   }
   return globalThis.__agentproofChallengeStore;
+}
+
+export function setChallengeStoreForTests(store: ChallengeStore | null): void {
+  globalThis.__agentproofChallengeStore = store ?? undefined;
+}
+
+/**
+ * Initialize storage backends from env. Safe to call on boot.
+ * Redis is optional — falls back to memory if unavailable.
+ */
+export async function initStorageBackends(): Promise<{
+  backend: "memory" | "redis";
+  redis: boolean;
+}> {
+  if (getStorageBackend() !== "redis") {
+    return { backend: "memory", redis: false };
+  }
+  try {
+    const { getRedisClient, RedisSessionStore, RedisRateLimitStore } =
+      await import("@/lib/storage/redis");
+    const { setSessionStoreForTests } = await import("@/lib/security/session");
+    const { setRateLimitStoreForTests } = await import(
+      "@/lib/storage/rateLimitStore"
+    );
+    const client = await getRedisClient();
+    if (!client) {
+      return { backend: "memory", redis: false };
+    }
+    // Challenge store: use Redis-backed async adapter
+    const { RedisBackedChallengeStore } = await import(
+      "@/lib/storage/redisChallengeStore"
+    );
+    globalThis.__agentproofChallengeStore = new RedisBackedChallengeStore(
+      client,
+    );
+    setSessionStoreForTests(new RedisSessionStore(client));
+    setRateLimitStoreForTests(new RedisRateLimitStore(client));
+    return { backend: "redis", redis: true };
+  } catch {
+    return { backend: "memory", redis: false };
+  }
 }

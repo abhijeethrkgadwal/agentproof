@@ -3,7 +3,10 @@ import { ClientTelemetrySchema } from "@/lib/telemetry/events";
 
 export const CreateChallengeRequestSchema = z.object({
   difficulty: z.number().int().min(1).max(5).optional().default(1),
-  sessionId: z.string().uuid().optional(),
+  sessionId: z.string().min(8).max(64).optional(),
+  environment: z.enum(["test", "live"]).optional().default("test"),
+  projectId: z.string().min(1).max(128).optional(),
+  apiKey: z.string().min(8).max(128).optional(),
 });
 
 export const VerifyRequestSchema = z.object({

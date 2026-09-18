@@ -42,3 +42,10 @@ yarn-error.log*
 next-env.d.ts
 test-results/
 playwright-report/
+
+# local runtime / redis
+dump.rdb
+data/developers/
+data/lab-runs/*.json
+data/feature-snapshots/
+data/study/

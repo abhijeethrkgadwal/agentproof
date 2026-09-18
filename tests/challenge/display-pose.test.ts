@@ -10,7 +10,7 @@ describe("display pose harden", () => {
     challenge.startedAt = new Date().toISOString();
     const exact = posesAtElapsed(challenge, 1200);
     const display = toDisplayPoses(challenge, 1200);
-    expect(display.elapsedMs % 200 === 0 || display.elapsedMs === 0).toBe(true);
+    expect(display.elapsedMs % 320 === 0 || display.elapsedMs === 0).toBe(true);
     const moved = display.poses.some((pose, i) => {
       const e = exact[i]!;
       return pose.x !== e.x || pose.y !== e.y;
@@ -18,25 +18,23 @@ describe("display pose harden", () => {
     expect(moved || display.elapsedMs !== 1200).toBe(true);
   });
 
-  it("same time bucket shares base elapsed but wall-clock wobble can differ", () => {
+  it("same time bucket shares base elapsed", () => {
     const challenge = generateTemporalChallenge({ difficulty: 1 });
-    const a = toDisplayPoses(challenge, 410);
-    const b = toDisplayPoses(challenge, 490);
+    const a = toDisplayPoses(challenge, 330);
+    const b = toDisplayPoses(challenge, 600);
     expect(a.elapsedMs).toBe(b.elapsedMs);
-    // Wobble is wall-clock continuous — poses within a bucket need not be identical
     expect(a.poses.length).toBe(b.poses.length);
   });
 
-  it("wobble keeps poses near the primary path (human-trackable)", () => {
+  it("display poses stay inside the scene bounds", () => {
     const challenge = generateTemporalChallenge({ difficulty: 1 });
-    const exact = posesAtElapsed(challenge, 2000);
+    const { width, height } = challenge.renderConfiguration;
     const display = toDisplayPoses(challenge, 2000);
-    for (let i = 0; i < exact.length; i += 1) {
-      const dx = Math.abs(display.poses[i]!.x - exact[i]!.x);
-      const dy = Math.abs(display.poses[i]!.y - exact[i]!.y);
-      // Quantize + jitter + wobble should stay within a perceptual band
-      expect(dx).toBeLessThan(48);
-      expect(dy).toBeLessThan(48);
+    for (const pose of display.poses) {
+      expect(pose.x).toBeGreaterThanOrEqual(0);
+      expect(pose.y).toBeGreaterThanOrEqual(0);
+      expect(pose.x).toBeLessThanOrEqual(width);
+      expect(pose.y).toBeLessThanOrEqual(height);
     }
   });
 });

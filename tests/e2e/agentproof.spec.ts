@@ -137,10 +137,12 @@ test.describe("AgentProof e2e (Phase 3)", () => {
 
   test("health endpoint", async ({ request }) => {
     const response = await request.get("/api/health");
-    expect(await response.json()).toEqual({
+    const body = await response.json();
+    expect(body).toMatchObject({
       status: "ok",
       service: "agentproof",
     });
+    expect(body.label).toContain("not production security");
   });
 
   test("human path UI: start reveals canvas poses", async ({ page }) => {

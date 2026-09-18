@@ -11,6 +11,50 @@ import {
   VerificationResult,
   type VerificationPayload,
 } from "@/components/agentproof/VerificationResult";
+import type { StudyAggregate } from "@/lib/study/types";
+
+function StudyAggregatePanel() {
+  const [aggregate, setAggregate] = useState<StudyAggregate | null>(null);
+  useEffect(() => {
+    void fetch("/api/study/aggregate")
+      .then((r) => r.json())
+      .then((d) => setAggregate(d.aggregate ?? null))
+      .catch(() => setAggregate(null));
+  }, []);
+  if (!aggregate) {
+    return (
+      <p className="text-xs text-slate-500" data-testid="study-aggregate-loading">
+        Loading aggregate stats…
+      </p>
+    );
+  }
+  return (
+    <div
+      className="rounded border border-slate-800 bg-slate-950/80 p-4 text-sm text-slate-300"
+      data-testid="study-aggregate-panel"
+    >
+      <p className="text-xs text-amber-200/90">{aggregate.label}</p>
+      <ul className="mt-2 grid grid-cols-2 gap-2 font-mono text-xs">
+        <li>participants: {aggregate.participantCount}</li>
+        <li>attempts: {aggregate.attempts}</li>
+        <li>success: {(aggregate.successRate * 100).toFixed(0)}%</li>
+        <li>abandon: {(aggregate.abandonmentRate * 100).toFixed(0)}%</li>
+        <li>
+          median time:{" "}
+          {aggregate.medianCompletionTimeMs === null
+            ? "—"
+            : `${Math.round(aggregate.medianCompletionTimeMs)} ms`}
+        </li>
+        <li>
+          p95 time:{" "}
+          {aggregate.p95CompletionTimeMs === null
+            ? "—"
+            : `${Math.round(aggregate.p95CompletionTimeMs)} ms`}
+        </li>
+      </ul>
+    </div>
+  );
+}
 
 type Phase =
   | "consent"
@@ -193,13 +237,17 @@ export default function StudyPage() {
         <header className="flex flex-wrap items-center justify-between gap-4">
           <div>
             <p className="font-mono text-xs tracking-[0.25em] text-cyan-400/80">
-              HUMAN STUDY · PHASE 6
+              HUMAN STUDY · PHASE 8
             </p>
             <h1 className="font-display mt-1 text-3xl text-slate-50">
               Observational pilot
             </h1>
             <p className="mt-2 text-sm text-slate-400">
               Observational pilot — not a scientific human-performance study.
+            </p>
+            <p className="mt-1 text-xs text-amber-200/80">
+              Research/portfolio prototype — not production security
+              infrastructure. Target N 30–50; results report honest N only.
             </p>
           </div>
           <nav className="flex gap-3 text-sm">
@@ -314,6 +362,7 @@ export default function StudyPage() {
                         setSelected(pose.id);
                         setEvents((n) => n + 1);
                       }}
+                      aria-pressed={selected === pose.id}
                       className={`w-full rounded border px-3 py-2 text-left text-sm ${
                         selected === pose.id
                           ? "border-cyan-400 bg-cyan-950/40"
@@ -410,19 +459,21 @@ export default function StudyPage() {
 
         {phase === "done" ? (
           <section
-            className="rounded-md border border-slate-800 bg-slate-950/60 p-6"
+            className="space-y-4 rounded-md border border-slate-800 bg-slate-950/60 p-6"
             data-testid="study-done"
           >
             <p className="text-slate-200">
               {message ?? "Thank you for participating."}
             </p>
-            <p className="mt-2 text-sm text-slate-500">
-              Individual results are not shown publicly. Aggregates appear on
-              the Agent Lab dashboard under Human Observations.
+            <p className="text-sm text-slate-500">
+              Individual results are not shown publicly. Aggregates below (and on
+              the Agent Lab dashboard) are labeled as an observational pilot —
+              not a scientific human-performance study.
             </p>
+            <StudyAggregatePanel />
             <Link
               href="/lab"
-              className="mt-4 inline-block text-cyan-400 hover:underline"
+              className="mt-2 inline-block text-cyan-400 hover:underline"
             >
               View Lab aggregates
             </Link>
