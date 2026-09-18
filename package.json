@@ -9,7 +9,9 @@
     "lint": "eslint .",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "test:redteam": "vitest run tests/redteam && playwright test -c playwright.redteam.config.ts",
+    "attack:matrix": "node scripts/attacks/run-attack-matrix.mjs"
   },
   "dependencies": {
     "next": "16.3.5",
