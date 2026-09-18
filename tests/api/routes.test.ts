@@ -73,10 +73,42 @@ describe("API routes (Phase 3 protocol)", () => {
   it("health returns ok", async () => {
     const response = await health();
     expect(response.status).toBe(200);
-    expect(await response.json()).toEqual({
+    const body = await response.json();
+    expect(body).toMatchObject({
       status: "ok",
       service: "agentproof",
     });
+    expect(body.label).toContain("not production security");
+    expect(body.storage).toBeDefined();
+  });
+
+  it("rejects invalid API keys on challenge issue", async () => {
+    const response = await createChallenge(
+      new Request("http://localhost/api/challenge", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-AgentProof-Key": "ap_test_invalidkeyinvalidkeyinvalid12",
+        },
+        body: JSON.stringify({ difficulty: 1 }),
+      }),
+    );
+    expect(response.status).toBe(401);
+    const body = await response.json();
+    expect(body.error).toBe("invalid_api_key");
+  });
+
+  it("requires API key for live environment", async () => {
+    const response = await createChallenge(
+      new Request("http://localhost/api/challenge", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ difficulty: 1, environment: "live" }),
+      }),
+    );
+    expect(response.status).toBe(401);
+    const body = await response.json();
+    expect(body.error).toBe("api_key_required_for_live");
   });
 
   it("issues a challenge without motion leakage", async () => {

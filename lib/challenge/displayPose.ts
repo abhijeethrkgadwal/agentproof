@@ -13,8 +13,8 @@ export function getDisplayTimeBucketMs(): number {
 
 /** Spatial quantization grid for display coordinates (px). */
 export function getDisplayGridPx(): number {
-  const raw = Number(process.env.AGENTPROOF_DISPLAY_GRID_PX ?? "28");
-  return Number.isFinite(raw) && raw >= 4 ? raw : 28;
+  const raw = Number(process.env.AGENTPROOF_DISPLAY_GRID_PX ?? "32");
+  return Number.isFinite(raw) && raw >= 4 ? raw : 32;
 }
 
 /** Max deterministic display jitter amplitude (px). */
@@ -34,14 +34,14 @@ export function getDisplayEmaAlpha(): number {
  * Low-frequency warp amplitude (px). Must survive attacker EMA/low-pass.
  */
 export function getDisplayWobblePx(): number {
-  const raw = Number(process.env.AGENTPROOF_DISPLAY_WOBBLE_PX ?? "28");
-  return Number.isFinite(raw) && raw >= 0 ? raw : 28;
+  const raw = Number(process.env.AGENTPROOF_DISPLAY_WOBBLE_PX ?? "36");
+  return Number.isFinite(raw) && raw >= 0 ? raw : 36;
 }
 
 /** Per-object display time lag range (ms) — desynchronizes apparent turns. */
 export function getDisplayLagMs(): number {
-  const raw = Number(process.env.AGENTPROOF_DISPLAY_LAG_MS ?? "700");
-  return Number.isFinite(raw) && raw >= 0 ? raw : 700;
+  const raw = Number(process.env.AGENTPROOF_DISPLAY_LAG_MS ?? "900");
+  return Number.isFinite(raw) && raw >= 0 ? raw : 900;
 }
 
 function quantize(value: number, grid: number): number {
@@ -126,7 +126,7 @@ export function toDisplayPoses(
       byId.get(decoyId) ??
       exactPose;
     const mix =
-      0.28 + hashUnit(`${challenge.challengeId}:${id}:mix`) * 0.22; // 0.28–0.50
+      0.35 + hashUnit(`${challenge.challengeId}:${id}:mix`) * 0.25; // 0.35–0.60
 
     const unitX = hashUnit(
       `${challenge.challengeId}:${id}:${displayElapsed}:x`,
@@ -139,8 +139,9 @@ export function toDisplayPoses(
 
     // Adversarial bias: correct object gets STRONGER mid/low-freq warp so
     // "minimum / closest turn-count" heuristics avoid the GT id.
+    // Phase 8: slightly stronger bias after gate sampling showed residual flake.
     const isCorrect = id === challenge.groundTruth.correctObjectId;
-    const ampScale = isCorrect ? 1.85 : 0.55;
+    const ampScale = isCorrect ? 2.25 : 0.42;
     const objPhase = hashUnit(`${challenge.challengeId}:${id}:objphase`) * 0.6;
     const localAmp = warpAmp * ampScale;
     const wx =
@@ -156,7 +157,7 @@ export function toDisplayPoses(
     const mid =
       isCorrect
         ? localAmp *
-          0.65 *
+          0.85 *
           Math.sin(2 * Math.PI * 0.85 * tSec + objPhase * 4)
         : 0;
 

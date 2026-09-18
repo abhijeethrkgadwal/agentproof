@@ -280,6 +280,10 @@ async function main() {
 
   mkdirSync(OUT_DIR, { recursive: true });
   writeFileSync(
+    join(OUT_DIR, "phase-8-regression-gates.json"),
+    JSON.stringify(summary, null, 2),
+  );
+  writeFileSync(
     join(OUT_DIR, "phase-7-regression-gates.json"),
     JSON.stringify(summary, null, 2),
   );
