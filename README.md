@@ -8,14 +8,19 @@ AgentProof issues dynamic interaction challenges, keeps ground truth on the serv
 
 It does **not** claim to be “AI-proof” or to prove that a user is human.
 
-## Phase 8 highlights
+## Versions
 
-- Redis multi-process soak (`npm run soak:redis`) + boot-time storage init
-- Final Lab benchmark matrix (Phases 2–7 comparisons)
-- Human pilot UX/ops + recruitment script (honest N)
-- SDK/API security review (invalid keys rejected; live requires live key)
-- Accessibility validation notes + public docs / case study
-- Landing polish with Security + Genesis links
+### AgentProof v0.1 — Research/security foundation
+
+Temporal challenge, progressive frames, HMAC/session/replay gates, Agent Lab V2, study pilot, Redis-ready stores, SDK path, Phase 8 validation.
+
+### AgentProof v0.2 — Natural interaction challenge experiments
+
+Adds **Dynamic Drag & Avoid**, **Physical Interaction**, and **Dynamic Path** on the same server-authoritative stack. Temporal remains the original research challenge at `/demo/temporal`.
+
+**v0.2 is an experimental challenge UX release and is not production security infrastructure.**
+
+See [`docs/challenges-v02.md`](docs/challenges-v02.md).
 
 ## Quick start
 
@@ -27,7 +32,9 @@ npm install
 npm run dev -- --port 43123 --hostname 127.0.0.1
 ```
 
-- [Demo](http://127.0.0.1:43123/demo) · [Study](http://127.0.0.1:43123/study) · [Lab](http://127.0.0.1:43123/lab)
+- [Demo hub](http://127.0.0.1:43123/demo) · [Temporal](http://127.0.0.1:43123/demo/temporal) · [Drag & Avoid](http://127.0.0.1:43123/demo/drag-avoid)
+- [Physical](http://127.0.0.1:43123/demo/physical) · [Dynamic Path](http://127.0.0.1:43123/demo/dynamic-path)
+- [Challenge lab](http://127.0.0.1:43123/challenge-lab) · [Study](http://127.0.0.1:43123/study) · [Lab](http://127.0.0.1:43123/lab)
 - [Accessible](http://127.0.0.1:43123/demo/accessible) · [SDK example](http://127.0.0.1:43123/examples/integration.html)
 
 ## Redis (optional)
@@ -37,8 +44,6 @@ export AGENTPROOF_STORAGE_BACKEND=redis
 export AGENTPROOF_REDIS_URL=redis://127.0.0.1:6379
 npm run soak:redis
 ```
-
-For HTTP cross-instance soak, run two Next.js servers and set `SOAK_BASE_A` / `SOAK_BASE_B`.
 
 ## Architecture
 
@@ -51,6 +56,8 @@ POST /api/verify     ────> GT check ⟂ DecisionEngine(features)
                      <──── verified + decision + risk factors
 ```
 
+Challenge types: `temporal` | `drag_avoid` | `physical` | `dynamic_path`.
+
 ## Automation Cost
 
 Experimental metric only:
@@ -59,6 +66,7 @@ Experimental metric only:
 
 ## Docs
 
+- [`docs/challenges-v02.md`](docs/challenges-v02.md)
 - [`docs/security.md`](docs/security.md)
 - [`docs/architecture.md`](docs/architecture.md)
 - [`docs/agent-lab.md`](docs/agent-lab.md)
@@ -74,14 +82,12 @@ Experimental metric only:
 npm test && npm run lint && npm run build
 PLAYWRIGHT_PORT=43123 npm run test:e2e
 npm run lab:gates -- http://127.0.0.1:43123
-npm run lab:benchmark -- http://127.0.0.1:43123
 ```
 
 ## Roadmap
 
-1–7 delivered (challenge → Lab V2 → study → harden + Redis/SDK).  
-8 — validation + public release (this).  
-9 — not started.
+1–8 delivered (challenge → Lab V2 → study → harden + Redis/SDK → validation).  
+9 — natural challenge lab (this).
 
 ## License
 

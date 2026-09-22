@@ -1,5 +1,6 @@
 import { createHash } from "crypto";
 import type { ObjectPose, StoredChallenge } from "@/lib/challenge/types";
+import { isTemporalChallenge } from "@/lib/challenge/types";
 import { posesAtElapsed } from "@/lib/challenge/motion";
 
 /**
@@ -71,6 +72,10 @@ export function toDisplayPoses(
   challenge: StoredChallenge,
   elapsedMs: number,
 ): DisplayPoseResult {
+  if (!isTemporalChallenge(challenge)) {
+    return { elapsedMs: Math.max(0, elapsedMs), poses: [] };
+  }
+
   const bucketMs = getDisplayTimeBucketMs();
   const grid = getDisplayGridPx();
   const jitterAmp = getDisplayJitterPx();

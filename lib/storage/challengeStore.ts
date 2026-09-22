@@ -24,21 +24,7 @@ export interface ChallengeStore {
 }
 
 function cloneChallenge(found: StoredChallenge): StoredChallenge {
-  return {
-    ...found,
-    groundTruth: { ...found.groundTruth },
-    renderConfiguration: {
-      ...found.renderConfiguration,
-      objects: found.renderConfiguration.objects.map((o) => ({
-        ...o,
-        segments: o.segments.map((s) => ({
-          ...s,
-          velocity: { ...s.velocity },
-        })),
-        start: { ...o.start },
-      })),
-    },
-  };
+  return structuredClone(found);
 }
 
 export class InMemoryChallengeStore implements ChallengeStore {

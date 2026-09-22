@@ -3,7 +3,20 @@ import type {
   PublicChallengeResponse,
   StoredChallenge,
 } from "@/lib/challenge/types";
+import { isTemporalChallenge } from "@/lib/challenge/types";
 import { toDisplayPoses } from "@/lib/challenge/displayPose";
+import {
+  toDragAvoidFrame,
+  toDragAvoidPublic,
+} from "@/lib/challenge/drag-avoid";
+import {
+  toPhysicalFrame,
+  toPhysicalPublic,
+} from "@/lib/challenge/physical";
+import {
+  toDynamicPathFrame,
+  toDynamicPathPublic,
+} from "@/lib/challenge/dynamic-path";
 
 /**
  * Issued payload: object identity only — never segments, starts, or
@@ -14,6 +27,22 @@ export function toPublicChallenge(
   challenge: StoredChallenge,
   token: string,
 ): PublicChallengeResponse {
+  switch (challenge.challengeType) {
+    case "drag_avoid":
+      return toDragAvoidPublic(challenge, token);
+    case "physical":
+      return toPhysicalPublic(challenge, token);
+    case "dynamic_path":
+      return toDynamicPathPublic(challenge, token);
+    case "temporal":
+    default:
+      break;
+  }
+
+  if (!isTemporalChallenge(challenge)) {
+    throw new Error(`unsupported_challenge_type:${challenge.challengeType}`);
+  }
+
   return {
     challengeId: challenge.challengeId,
     token,
@@ -46,6 +75,22 @@ export function toFrameResponse(
   challenge: StoredChallenge,
   elapsedMs: number,
 ): FrameResponse {
+  switch (challenge.challengeType) {
+    case "drag_avoid":
+      return toDragAvoidFrame(challenge, elapsedMs);
+    case "physical":
+      return toPhysicalFrame(challenge, elapsedMs);
+    case "dynamic_path":
+      return toDynamicPathFrame(challenge, elapsedMs);
+    case "temporal":
+    default:
+      break;
+  }
+
+  if (!isTemporalChallenge(challenge)) {
+    throw new Error(`unsupported_challenge_type:${challenge.challengeType}`);
+  }
+
   const durationMs = challenge.renderConfiguration.durationMs;
   const display = toDisplayPoses(challenge, elapsedMs);
   return {
@@ -67,5 +112,10 @@ export function publicPayloadLeaksMotion(payload: unknown): boolean {
   if (text.includes("correctObjectId")) return true;
   if (text.includes("groundTruth")) return true;
   if (text.includes("requiredDirectionChanges")) return true;
+  if (text.includes("accessibleSafePath")) return true;
+  if (text.includes("accessiblePlacementKey")) return true;
+  if (text.includes("accessibleGateSlots")) return true;
+  if (text.includes("openingCenterStart")) return true;
+  if (text.includes("protectedBounds")) return true;
   return false;
 }

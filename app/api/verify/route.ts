@@ -1,6 +1,7 @@
 import { VerifyRequestSchema } from "@/lib/api/schemas";
 import { clientKeyFromRequest, jsonError, jsonOk } from "@/lib/api/http";
-import { validateSelectedObject } from "@/lib/challenge/validator";
+import { getChallengeDurationMs } from "@/lib/challenge/types";
+import { validateChallengeAnswer } from "@/lib/challenge/validator";
 import { getDecisionEngine } from "@/lib/decision/ruleEngine";
 import { createFeatureSnapshot } from "@/lib/features/snapshot";
 import { appendFeatureSnapshot } from "@/lib/features/store";
@@ -43,7 +44,7 @@ export async function POST(request: Request) {
     });
   }
 
-  const { challengeId, token, selectedObjectId } = parsed.data;
+  const { challengeId, token, selectedObjectId, interaction } = parsed.data;
   const telemetry = sanitizeTelemetry(parsed.data.telemetry);
 
   const tokenResult = verifyChallengeToken(token);
@@ -95,8 +96,9 @@ export async function POST(request: Request) {
     return jsonError(409, "replay");
   }
 
+  const durationMs = getChallengeDurationMs(challenge);
   const serverActiveMs = Date.now() - new Date(challenge.startedAt).getTime();
-  const requiredActive = minActiveMs(challenge.renderConfiguration.durationMs);
+  const requiredActive = minActiveMs(durationMs);
   if (serverActiveMs < requiredActive) {
     return jsonError(425, "premature_submit", {
       serverActiveMs,
@@ -105,7 +107,10 @@ export async function POST(request: Request) {
   }
 
   // Ground-truth verification is COMPLETELY SEPARATE from risk scoring.
-  const answer = validateSelectedObject(challenge, selectedObjectId);
+  const answer = validateChallengeAnswer(challenge, {
+    selectedObjectId,
+    interaction,
+  });
   const failedAttempts = challenge.failedAttempts;
 
   const completionTimeMs = telemetry.completionTimeMs ?? serverActiveMs;

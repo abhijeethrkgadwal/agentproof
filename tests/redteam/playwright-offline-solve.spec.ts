@@ -83,7 +83,7 @@ test.describe("red-team Playwright offline solve", () => {
       await route.fulfill({ response, json });
     });
 
-    await page.goto("/demo");
+    await page.goto("/demo/temporal");
     await expect.poll(() => challengePayload !== null).toBeTruthy();
 
     const required =

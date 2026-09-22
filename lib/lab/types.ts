@@ -1,3 +1,9 @@
+export type LabChallengeType =
+  | "temporal"
+  | "drag_avoid"
+  | "physical"
+  | "dynamic_path";
+
 export type AttackerLevel =
   | "human"
   | "human_study"
@@ -12,6 +18,8 @@ export type LabRunRecord = {
   runId: string;
   level: AttackerLevel;
   difficulty: number;
+  /** Challenge family under test (v0.2). Defaults to temporal for historical runs. */
+  challengeType?: LabChallengeType;
   challengeId?: string;
   status: LabRunStatus;
   success: boolean;
@@ -43,7 +51,11 @@ export type AttackName =
   | "timing_attack"
   | "direct_api_attack"
   | "state_inference"
-  | "replay_tampering";
+  | "replay_tampering"
+  /** Placeholders for v0.2 natural challenges — no attacker implementation yet. */
+  | "drag_avoid_placeholder"
+  | "physical_placeholder"
+  | "dynamic_path_placeholder";
 
 /**
  * Persisted attack-run schema (Phase 6 Lab V2).
@@ -54,6 +66,7 @@ export type AttackRunRecord = {
   attackLevel: string;
   attackName: AttackName;
   challengeDifficulty: number;
+  challengeType?: LabChallengeType;
   success: boolean;
   solveTimeMs: number;
   frameCount: number;
@@ -114,3 +127,11 @@ export function computeAutomationCost(input: {
 
 export const AUTOMATION_COST_FORMULA =
   "AutomationCost = timeToSolveMs/1000 + 0.5*interactionCount + 0.1*framesObserved + 0.05*apiRequestCount";
+
+/** Recognized Lab challenge identifiers (v0.2). */
+export const LAB_CHALLENGE_TYPES: LabChallengeType[] = [
+  "temporal",
+  "drag_avoid",
+  "physical",
+  "dynamic_path",
+];

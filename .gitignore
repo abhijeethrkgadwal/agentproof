@@ -49,3 +49,4 @@ data/developers/
 data/lab-runs/*.json
 data/feature-snapshots/
 data/study/
+agent-tools/

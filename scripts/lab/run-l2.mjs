@@ -111,7 +111,7 @@ async function oneRun(browser) {
     }
   });
 
-  await page.goto(`${BASE}/demo`);
+  await page.goto(`${BASE}/demo/temporal`);
   await page.getByTestId("start-challenge").click();
   actions += 1;
   await page.waitForTimeout(durationMs + 500);

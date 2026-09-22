@@ -114,15 +114,16 @@ export default function LabPage() {
         <header className="flex flex-wrap items-center justify-between gap-4">
           <div>
             <p className="font-mono text-xs tracking-[0.25em] text-cyan-400/80">
-              AGENT LAB V2 · PHASE 6
+              AGENT LAB · v0.2
             </p>
             <h1 className="font-display mt-1 text-3xl text-slate-50">
               Human baseline & automation cost
             </h1>
             <p className="mt-2 max-w-2xl text-sm text-slate-400">
-              Measure real study aggregates vs automated attacks A–F. Phase 5
-              protocol unchanged. No Jev / external AI. Automation Cost is an
-              experimental metric — not a universal security score.
+              Challenge types: temporal, drag_avoid, physical, dynamic_path.
+              Historical temporal Lab V2 A–F unchanged. Natural-challenge
+              attackers are placeholders only — no fake benchmarks. Automation
+              Cost is experimental — not a universal security score.
             </p>
           </div>
           <div className="flex gap-3 text-sm">

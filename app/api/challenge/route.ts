@@ -1,6 +1,6 @@
 import { CreateChallengeRequestSchema } from "@/lib/api/schemas";
 import { clientKeyFromRequest, jsonError, jsonOk } from "@/lib/api/http";
-import { generateTemporalChallenge } from "@/lib/challenge/generator";
+import { generateChallengeByType } from "@/lib/challenge/core/registry";
 import { toPublicChallenge } from "@/lib/challenge/public";
 import { authorizeChallengeRequest } from "@/lib/developers/auth";
 import { signChallengeToken } from "@/lib/security/signing";
@@ -63,7 +63,7 @@ export async function POST(request: Request) {
       projectId: auth.projectId ?? parsed.data.projectId,
     });
 
-    const challenge = generateTemporalChallenge({
+    const challenge = generateChallengeByType(parsed.data.challengeType, {
       difficulty: parsed.data.difficulty,
       sessionId,
     });

@@ -130,13 +130,19 @@ export type GenerateChallengeOptions = {
   requiredDirectionChanges?: number;
 };
 
+export type TemporalStoredChallenge = StoredChallenge & {
+  challengeType: "temporal";
+  renderConfiguration: TemporalRenderConfiguration;
+  groundTruth: TemporalGroundTruth;
+};
+
 /**
  * Deterministic-structure temporal challenge generator.
  * Ground truth stays server-side; only renderConfiguration is client-safe.
  */
 export function generateTemporalChallenge(
   options: GenerateChallengeOptions = {},
-): StoredChallenge {
+): TemporalStoredChallenge {
   const difficulty = options.difficulty ?? 1;
   const profile = getDifficultyProfile(difficulty);
   const now = options.now ?? new Date();

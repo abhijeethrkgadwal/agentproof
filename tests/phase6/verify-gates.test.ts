@@ -1,3 +1,4 @@
+import { isTemporalChallenge } from "@/lib/challenge/types";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { POST as createChallenge } from "@/app/api/challenge/route";
 import { POST as startChallenge } from "@/app/api/challenge/start/route";
@@ -122,7 +123,9 @@ describe("Phase 6 verify extras", () => {
     await getChallengeStore().updateChallenge(challenge.challengeId, {
       startedAt: new Date(Date.now() - 5000).toISOString(),
     });
-    const stored = (await getChallengeStore().getChallenge(challenge.challengeId))!;
+    const storedRaw = (await getChallengeStore().getChallenge(challenge.challengeId))!;
+    if (!isTemporalChallenge(storedRaw)) throw new Error("expected_temporal");
+    const stored = storedRaw;
     const verify = await verifyChallenge(
       jsonRequest(
         "http://localhost/api/verify",

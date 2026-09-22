@@ -10,6 +10,7 @@ import { resetRateLimits } from "@/lib/security/rateLimit";
 import { setSessionStoreForTests, InMemorySessionStore } from "@/lib/security/session";
 import { SESSION_COOKIE } from "@/lib/security/session";
 import { signChallengeToken } from "@/lib/security/signing";
+import { isTemporalChallenge } from "@/lib/challenge/types";
 
 
 function jsonRequest(url: string, body: unknown, cookie?: string): Request {
@@ -22,6 +23,15 @@ function jsonRequest(url: string, body: unknown, cookie?: string): Request {
     headers,
     body: JSON.stringify(body),
   });
+}
+
+
+async function temporalStored(challengeId: string) {
+  const stored = await getChallengeStore().getChallenge(challengeId);
+  if (!stored || !isTemporalChallenge(stored)) {
+    throw new Error("expected_temporal_challenge");
+  }
+  return stored;
 }
 
 function sidCookie(response: Response): string {
@@ -127,7 +137,7 @@ describe("API routes (Phase 3 protocol)", () => {
 
   it("rejects verify before start (invalid lifecycle)", async () => {
     const { challenge, cookie } = await issue();
-    const stored = (await getChallengeStore().getChallenge(challenge.challengeId))!;
+    const stored = await temporalStored(challenge.challengeId);
     const response = await verifyChallenge(
       jsonRequest(
         "http://localhost/api/verify",
@@ -172,7 +182,7 @@ describe("API routes (Phase 3 protocol)", () => {
 
   it("verifies a correct answer after active window and rejects replay", async () => {
     const { challenge, cookie } = await issue();
-    const stored = (await getChallengeStore().getChallenge(challenge.challengeId))!;
+    const stored = await temporalStored(challenge.challengeId);
     await startAndBackdate(
       challenge,
       cookie,
@@ -232,7 +242,7 @@ describe("API routes (Phase 3 protocol)", () => {
 
   it("rejects incorrect answers", async () => {
     const { challenge, cookie } = await issue();
-    const stored = (await getChallengeStore().getChallenge(challenge.challengeId))!;
+    const stored = await temporalStored(challenge.challengeId);
     await startAndBackdate(
       challenge,
       cookie,
@@ -262,7 +272,7 @@ describe("API routes (Phase 3 protocol)", () => {
 
   it("rejects invalid signatures and malformed tokens", async () => {
     const { challenge, cookie } = await issue();
-    const stored = (await getChallengeStore().getChallenge(challenge.challengeId))!;
+    const stored = await temporalStored(challenge.challengeId);
     await startAndBackdate(
       challenge,
       cookie,
@@ -316,7 +326,7 @@ describe("API routes (Phase 3 protocol)", () => {
 
   it("rejects expired challenges", async () => {
     const { challenge, cookie } = await issue();
-    const stored = (await getChallengeStore().getChallenge(challenge.challengeId))!;
+    const stored = await temporalStored(challenge.challengeId);
     stored.expiresAt = new Date(Date.now() - 1000).toISOString();
     getChallengeStore().deleteChallenge(challenge.challengeId);
     getChallengeStore().createChallenge({
@@ -380,7 +390,7 @@ describe("API routes (Phase 3 protocol)", () => {
 
   it("rejects premature submit before min active window", async () => {
     const { challenge, cookie } = await issue();
-    const stored = (await getChallengeStore().getChallenge(challenge.challengeId))!;
+    const stored = await temporalStored(challenge.challengeId);
     await startChallenge(
       jsonRequest(
         "http://localhost/api/challenge/start",

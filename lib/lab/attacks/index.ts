@@ -4,8 +4,10 @@ import { runPollingOptimisation } from "@/lib/lab/attacks/pollingOptimisation";
 import { runReplayTampering } from "@/lib/lab/attacks/replayTampering";
 import { runStateInference } from "@/lib/lab/attacks/stateInference";
 import { runTimingAttack } from "@/lib/lab/attacks/timingAttack";
+import { runNaturalChallengePlaceholder } from "@/lib/lab/attacks/naturalPlaceholders";
 import { appendAttackRun } from "@/lib/lab/attackStore";
-import type { AttackName, AttackRunRecord } from "@/lib/lab/types";
+import type { AttackName, AttackRunRecord, LabChallengeType } from "@/lib/lab/types";
+import { LAB_CHALLENGE_TYPES } from "@/lib/lab/types";
 
 export const LAB_V2_ATTACKS: AttackName[] = [
   "frame_reconstruction_v2",
@@ -15,6 +17,15 @@ export const LAB_V2_ATTACKS: AttackName[] = [
   "state_inference",
   "replay_tampering",
 ];
+
+/** v0.2 placeholders — not part of regression gates; never invent success. */
+export const NATURAL_PLACEHOLDER_ATTACKS: AttackName[] = [
+  "drag_avoid_placeholder",
+  "physical_placeholder",
+  "dynamic_path_placeholder",
+];
+
+export { LAB_CHALLENGE_TYPES };
 
 export async function runLabV2Attack(
   name: AttackName,
@@ -43,6 +54,24 @@ export async function runLabV2Attack(
     case "replay_tampering":
       result = await runReplayTampering(options);
       break;
+    case "drag_avoid_placeholder":
+      result = await runNaturalChallengePlaceholder({
+        challengeType: "drag_avoid",
+        difficulty: options.difficulty,
+      });
+      break;
+    case "physical_placeholder":
+      result = await runNaturalChallengePlaceholder({
+        challengeType: "physical",
+        difficulty: options.difficulty,
+      });
+      break;
+    case "dynamic_path_placeholder":
+      result = await runNaturalChallengePlaceholder({
+        challengeType: "dynamic_path",
+        difficulty: options.difficulty,
+      });
+      break;
     default: {
       const _exhaustive: never = name;
       throw new Error(`unknown_attack:${_exhaustive}`);
@@ -60,4 +89,10 @@ export async function runAllLabV2Attacks(options: {
     out.push(await runLabV2Attack(name, options));
   }
   return out;
+}
+
+export function recognizeChallengeType(value: string): LabChallengeType | null {
+  return (LAB_CHALLENGE_TYPES as string[]).includes(value)
+    ? (value as LabChallengeType)
+    : null;
 }

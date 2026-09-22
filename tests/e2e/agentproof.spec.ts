@@ -17,6 +17,8 @@ test.describe("AgentProof e2e (Phase 3)", () => {
     await page.goto("/");
     await expect(page.getByRole("heading", { name: "AgentProof" })).toBeVisible();
     await page.getByRole("link", { name: "Try Demo" }).click();
+    await expect(page.getByTestId("demo-link-temporal")).toBeVisible();
+    await page.getByTestId("demo-link-temporal").click();
     await expect(page.getByTestId("challenge-widget")).toBeVisible();
     await expect(page.getByTestId("start-challenge")).toBeVisible();
   });
@@ -146,9 +148,19 @@ test.describe("AgentProof e2e (Phase 3)", () => {
   });
 
   test("human path UI: start reveals canvas poses", async ({ page }) => {
-    await page.goto("/demo");
+    await page.goto("/demo/temporal");
     await page.getByTestId("start-challenge").click();
     await expect(page.getByTestId("temporal-canvas")).toBeVisible();
     await expect(page.getByTestId("elapsed-label")).toBeVisible();
+  });
+
+  test("v0.2 natural challenge demos render", async ({ page }) => {
+    for (const path of ["/demo/drag-avoid", "/demo/physical", "/demo/dynamic-path"]) {
+      await page.goto(path);
+      await expect(page.getByTestId("start-challenge")).toBeVisible();
+    }
+    await page.goto("/challenge-lab");
+    await expect(page.getByTestId("lab-row-temporal")).toBeVisible();
+    await expect(page.getByTestId("lab-row-drag_avoid")).toBeVisible();
   });
 });
