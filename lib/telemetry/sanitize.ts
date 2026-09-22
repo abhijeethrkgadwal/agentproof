@@ -1,48 +1,60 @@
 import {
   ALLOWED_EVENT_TYPES,
-  ClientTelemetrySchema,
   type ClientTelemetry,
   type TelemetryEvent,
 } from "@/lib/telemetry/events";
 
 /**
  * Sanitize client telemetry: drop unknown fields, cap arrays, strip PII-like keys.
+ * Intentionally lenient — verify must not 400 solely because a drag session
+ * produced many pointer events.
  */
 export function sanitizeTelemetry(raw: unknown): ClientTelemetry {
-  const parsed = ClientTelemetrySchema.safeParse(raw ?? {});
-  if (!parsed.success) {
-    return {
-      completionTimeMs: undefined,
-      interactionEventCount: 0,
-      retryCount: 0,
-      events: [],
-    };
+  const data =
+    raw && typeof raw === "object" ? (raw as Record<string, unknown>) : {};
+
+  const rawEvents = Array.isArray(data.events) ? data.events : [];
+  const events: TelemetryEvent[] = [];
+  for (const item of rawEvents.slice(0, 100)) {
+    if (!item || typeof item !== "object") continue;
+    const event = item as Record<string, unknown>;
+    const eventType = event.eventType;
+    if (typeof eventType !== "string" || !ALLOWED_EVENT_TYPES.has(eventType)) {
+      continue;
+    }
+    events.push({
+      eventType: eventType as TelemetryEvent["eventType"],
+      timestamp: typeof event.timestamp === "string" ? event.timestamp : undefined,
+      challengeId:
+        typeof event.challengeId === "string" ? event.challengeId : undefined,
+      relativeTimeMs:
+        typeof event.relativeTimeMs === "number" && event.relativeTimeMs >= 0
+          ? event.relativeTimeMs
+          : undefined,
+      objectId: typeof event.objectId === "string" ? event.objectId : undefined,
+    });
+    if (events.length >= 50) break;
   }
 
-  const data = parsed.data;
-  const events: TelemetryEvent[] = (data.events ?? [])
-    .filter((event) => ALLOWED_EVENT_TYPES.has(event.eventType))
-    .slice(0, 50)
-    .map((event) => ({
-      eventType: event.eventType,
-      timestamp: event.timestamp,
-      challengeId: event.challengeId,
-      relativeTimeMs: event.relativeTimeMs,
-      objectId: event.objectId,
-    }));
+  const completionTimeMs =
+    typeof data.completionTimeMs === "number" && data.completionTimeMs >= 0
+      ? Math.min(data.completionTimeMs, 600_000)
+      : undefined;
+  const interactionEventCount =
+    typeof data.interactionEventCount === "number" &&
+    data.interactionEventCount >= 0
+      ? Math.min(Math.floor(data.interactionEventCount), 10_000)
+      : events.length;
+  const retryCount =
+    typeof data.retryCount === "number" && data.retryCount >= 0
+      ? Math.min(Math.floor(data.retryCount), 100)
+      : 0;
 
   return {
-    completionTimeMs:
-      typeof data.completionTimeMs === "number"
-        ? Math.min(data.completionTimeMs, 600_000)
-        : undefined,
-    interactionEventCount:
-      typeof data.interactionEventCount === "number"
-        ? Math.min(data.interactionEventCount, 10_000)
-        : events.length,
-    retryCount:
-      typeof data.retryCount === "number" ? Math.min(data.retryCount, 100) : 0,
-    startedAt: data.startedAt,
+    completionTimeMs,
+    interactionEventCount,
+    retryCount,
+    startedAt: typeof data.startedAt === "string" ? data.startedAt : undefined,
     events,
   };
 }

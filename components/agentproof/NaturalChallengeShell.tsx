@@ -186,7 +186,8 @@ export function NaturalChallengeShell({
   const onSamples = (next: InteractionSample[], count: number) => {
     setSamples(next);
     setInteractionCount(count);
-    pushEvent("object_moved");
+    // Do not append a telemetry event per pointer sample — that blows the
+    // 100-event verify cap and returns missing_or_invalid_fields.
   };
 
   const onAccessibleSubmit = (answers: Record<string, string | number>) => {

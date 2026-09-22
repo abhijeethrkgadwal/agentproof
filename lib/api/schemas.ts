@@ -1,5 +1,4 @@
 import { z } from "zod";
-import { ClientTelemetrySchema } from "@/lib/telemetry/events";
 
 export const ChallengeTypeSchema = z.enum([
   "temporal",
@@ -40,12 +39,29 @@ export const InteractionPayloadSchema = z.object({
   accessibleAnswers: z.record(z.string(), z.union([z.string(), z.number()])).optional(),
 });
 
+/**
+ * Loose telemetry intake — sanitizeTelemetry() enforces allowlists/caps.
+ * Strict ClientTelemetrySchema here rejected valid drag sessions once
+ * object_moved events exceeded 100.
+ */
+export const VerifyTelemetryIntakeSchema = z
+  .object({
+    completionTimeMs: z.number().nonnegative().optional(),
+    interactionEventCount: z.number().int().nonnegative().optional(),
+    retryCount: z.number().int().nonnegative().optional(),
+    startedAt: z.string().optional(),
+    events: z.array(z.record(z.string(), z.unknown())).max(500).optional(),
+  })
+  .passthrough()
+  .optional()
+  .default({});
+
 export const VerifyRequestSchema = z.object({
   challengeId: z.string().uuid(),
   token: z.string().min(1),
   selectedObjectId: z.string().min(1).optional(),
   interaction: InteractionPayloadSchema.optional(),
-  telemetry: ClientTelemetrySchema.optional().default({}),
+  telemetry: VerifyTelemetryIntakeSchema,
 }).superRefine((value, ctx) => {
   if (!value.selectedObjectId && !value.interaction) {
     ctx.addIssue({

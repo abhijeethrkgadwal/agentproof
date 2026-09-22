@@ -432,4 +432,41 @@ describe("Phase 9 natural challenges", () => {
     expect(challenge.challengeType).toBe("temporal");
     expect(challenge.scene.objects.length).toBeGreaterThanOrEqual(6);
   });
+
+  it("accepts verify telemetry with >100 pointer events (no missing_or_invalid_fields)", async () => {
+    const { challenge, cookie } = await issue("drag_avoid");
+    await startAndBackdate(challenge, cookie, 20_000);
+    const events = Array.from({ length: 150 }, (_, i) => ({
+      eventType: "object_moved" as const,
+      timestamp: new Date().toISOString(),
+      relativeTimeMs: i,
+      challengeId: challenge.challengeId,
+    }));
+    const response = await verifyChallenge(
+      jsonRequest(
+        "http://localhost/api/verify",
+        {
+          challengeId: challenge.challengeId,
+          token: challenge.token,
+          interaction: {
+            samples: [
+              { t: 0, x: 70, y: 180, objectId: "agent" },
+              { t: 500, x: 200, y: 180, objectId: "agent" },
+              { t: 1000, x: 560, y: 180, objectId: "agent" },
+            ],
+          },
+          telemetry: {
+            completionTimeMs: 5000,
+            interactionEventCount: 150,
+            events,
+          },
+        },
+        cookie,
+      ),
+    );
+    expect(response.status).toBe(200);
+    const body = await response.json();
+    expect(body.error).not.toBe("missing_or_invalid_fields");
+    expect(typeof body.verified).toBe("boolean");
+  });
 });
