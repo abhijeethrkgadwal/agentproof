@@ -27,7 +27,7 @@ export const CHALLENGE_META: Record<ChallengeType, ChallengeModuleMeta> = {
       "Drag the blue object to the green target without hitting the moving obstacles.",
     accessibility: {
       summary:
-        "Keyboard corridor-sequence task with the same verification intent.",
+        "Discrete keyboard nudges with live position announcements (same validation).",
       disclaimer: A11Y_DISCLAIMER,
       mode: "keyboard_sequence",
     },
@@ -41,7 +41,7 @@ export const CHALLENGE_META: Record<ChallengeType, ChallengeModuleMeta> = {
     instructionDefault:
       "Place the red block on the platform without knocking the blue block off.",
     accessibility: {
-      summary: "Choose a safe placement slot without dragging precision.",
+      summary: "Discrete nudges with live announcements (same validation).",
       disclaimer: A11Y_DISCLAIMER,
       mode: "structured_input",
     },
@@ -53,7 +53,7 @@ export const CHALLENGE_META: Record<ChallengeType, ChallengeModuleMeta> = {
     shortDescription: "Guide the ball through moving gate openings.",
     instructionDefault: "Guide the ball through the opening.",
     accessibility: {
-      summary: "Pick discrete safe gate slots without continuous tracking.",
+      summary: "Discrete nudges with live opening announcements (same validation).",
       disclaimer: A11Y_DISCLAIMER,
       mode: "structured_input",
     },

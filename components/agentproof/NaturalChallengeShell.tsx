@@ -21,9 +21,10 @@ export type NaturalChallengeRenderProps = {
   elapsedMs: number;
   complete: boolean;
   interactive: boolean;
+  /** Wall-clock ms when challenge became active (align samples to server). */
+  serverStartedAtMs: number;
   onSamples: (samples: InteractionSample[], interactionCount: number) => void;
   accessibleMode: boolean;
-  onAccessibleSubmit: (answers: Record<string, string | number>) => void;
 };
 
 export function NaturalChallengeShell({
@@ -46,10 +47,6 @@ export function NaturalChallengeShell({
   const [elapsedMs, setElapsedMs] = useState(0);
   const [complete, setComplete] = useState(false);
   const [samples, setSamples] = useState<InteractionSample[]>([]);
-  const [accessibleAnswers, setAccessibleAnswers] = useState<Record<
-    string,
-    string | number
-  > | null>(null);
   const [accessibleMode, setAccessibleMode] = useState(false);
   const [events, setEvents] = useState<TelemetryEvent[]>([]);
   const [startedAt, setStartedAt] = useState<number | null>(null);
@@ -58,6 +55,13 @@ export function NaturalChallengeShell({
     "idle" | "loading" | "success" | "error"
   >("idle");
   const [result, setResult] = useState<VerificationPayload | null>(null);
+
+  const durationMs = challenge?.scene.durationMs ?? 0;
+  const minActiveMs = Math.floor(durationMs * 0.85);
+  const canVerify =
+    startedAt !== null &&
+    samples.length >= 2 &&
+    elapsedMs >= minActiveMs;
 
   const pushEvent = useCallback(
     (eventType: TelemetryEvent["eventType"], extra?: Partial<TelemetryEvent>) => {
@@ -87,7 +91,6 @@ export function NaturalChallengeShell({
     setElapsedMs(0);
     setComplete(false);
     setSamples([]);
-    setAccessibleAnswers(null);
 
     try {
       const response = await fetch("/api/challenge", {
@@ -140,10 +143,11 @@ export function NaturalChallengeShell({
       if (!response.ok) {
         throw new Error(data.error ?? "Failed to start challenge");
       }
+      const now = Date.now();
       setPoses(data.poses);
       setElapsedMs(data.elapsedMs);
       setComplete(data.complete);
-      setStartedAt(Date.now());
+      setStartedAt(now);
       setLoadState("active");
       pushEvent("challenge_started");
     } catch (err) {
@@ -186,22 +190,22 @@ export function NaturalChallengeShell({
   const onSamples = (next: InteractionSample[], count: number) => {
     setSamples(next);
     setInteractionCount(count);
-    // Do not append a telemetry event per pointer sample — that blows the
-    // 100-event verify cap and returns missing_or_invalid_fields.
-  };
-
-  const onAccessibleSubmit = (answers: Record<string, string | number>) => {
-    setAccessibleAnswers(answers);
-    setInteractionCount((c) => c + 1);
   };
 
   const onVerify = async () => {
     if (!challenge) return;
-    if (!accessibleAnswers && samples.length < 2) {
+    if (samples.length < 2) {
       setError("Interact with the challenge before verifying.");
       return;
     }
+    if (!canVerify) {
+      setError(
+        `Wait for the active window (~${(minActiveMs / 1000).toFixed(1)}s) before verifying.`,
+      );
+      return;
+    }
     setVerifyStatus("loading");
+    setError(null);
     pushEvent("verification_requested");
     const completionTimeMs = startedAt ? Date.now() - startedAt : 0;
     try {
@@ -212,16 +216,13 @@ export function NaturalChallengeShell({
         body: JSON.stringify({
           challengeId: challenge.challengeId,
           token: challenge.token,
-          interaction: {
-            samples,
-            accessibleAnswers: accessibleAnswers ?? undefined,
-          },
+          interaction: { samples },
           telemetry: {
             completionTimeMs,
             interactionEventCount: interactionCount,
             retryCount: 0,
             startedAt: startedAt ? new Date(startedAt).toISOString() : undefined,
-            events,
+            events: events.slice(0, 40),
           },
         }),
       });
@@ -229,6 +230,10 @@ export function NaturalChallengeShell({
         error?: string;
       };
       if (!response.ok) {
+        const err =
+          data.error === "premature_submit"
+            ? "Too early — keep interacting until the timer completes."
+            : (data.error ?? `HTTP ${response.status}`);
         setVerifyStatus("error");
         setResult({
           verified: false,
@@ -237,7 +242,7 @@ export function NaturalChallengeShell({
           confidence: 0.5,
           band: "HIGH",
           challengeId: challenge.challengeId,
-          error: data.error ?? `HTTP ${response.status}`,
+          error: err,
         });
         pushEvent("challenge_failed");
         return;
@@ -259,7 +264,6 @@ export function NaturalChallengeShell({
     }
   };
 
-  const durationMs = challenge?.scene.durationMs ?? 0;
   const progress = durationMs ? Math.min(1, elapsedMs / durationMs) : 0;
 
   return (
@@ -350,13 +354,19 @@ export function NaturalChallengeShell({
             </div>
           ) : null}
 
-          {loadState === "active" ? (
+          {loadState === "active" && startedAt ? (
             <>
               <div className="flex items-center justify-between gap-3 text-xs text-slate-400">
                 <span data-testid="elapsed-label">
                   {(elapsedMs / 1000).toFixed(1)}s / {(durationMs / 1000).toFixed(1)}s
                 </span>
-                <span>{complete ? "Window complete" : "Active…"}</span>
+                <span>
+                  {complete
+                    ? "Window complete — you can verify"
+                    : canVerify
+                      ? "Ready to verify"
+                      : "Active…"}
+                </span>
               </div>
               <div className="h-1.5 overflow-hidden rounded-full bg-slate-800">
                 <div
@@ -370,29 +380,31 @@ export function NaturalChallengeShell({
                 elapsedMs,
                 complete,
                 interactive: true,
+                serverStartedAtMs: startedAt,
                 onSamples,
                 accessibleMode,
-                onAccessibleSubmit,
               })}
               <div className="flex flex-wrap items-center gap-3">
                 <button
                   type="button"
                   data-testid="verify-button"
-                  disabled={verifyStatus === "loading"}
+                  disabled={!canVerify || verifyStatus === "loading"}
                   onClick={() => void onVerify()}
                   className="rounded bg-cyan-500 px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-cyan-400 disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   Verify
                 </button>
                 <span className="text-sm text-slate-400">
-                  {accessibleAnswers
-                    ? "Accessible answer ready"
-                    : `${samples.length} interaction samples`}
+                  {samples.length} interaction samples
+                  {!canVerify && samples.length >= 2
+                    ? ` · wait ~${Math.max(0, (minActiveMs - elapsedMs) / 1000).toFixed(1)}s`
+                    : ""}
                 </span>
               </div>
               <p className="text-xs text-slate-500">
                 This is a pilot accessibility implementation and is not
-                WCAG-certified.
+                WCAG-certified. Accessible mode uses discrete moves with live
+                position announcements — same server validation as pointer drag.
               </p>
             </>
           ) : null}

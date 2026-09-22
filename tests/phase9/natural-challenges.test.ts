@@ -313,7 +313,7 @@ describe("Phase 9 natural challenges", () => {
     expect(wrongBody.verified).toBe(false);
   });
 
-  it("physical accessible answer must match server secret", async () => {
+  it("physical rejects secret accessible answers without trajectory", async () => {
     const stored = generateChallengeByType("physical", { difficulty: 1 });
     expect(isPhysicalChallenge(stored)).toBe(true);
     if (!isPhysicalChallenge(stored)) return;
@@ -343,64 +343,46 @@ describe("Phase 9 natural challenges", () => {
       20_000,
     );
 
-    const wrongKey =
-      stored.groundTruth.accessiblePlacementKey === "left" ? "right" : "left";
     const bad = await verifyChallenge(
       jsonRequest(
         "http://localhost/api/verify",
         {
           challengeId: stored.challengeId,
           token,
-          interaction: { accessibleAnswers: { placement: wrongKey } },
+          interaction: {
+            accessibleAnswers: {
+              placement: stored.groundTruth.accessiblePlacementKey,
+            },
+          },
         },
         cookie,
       ),
     );
-    expect((await bad.json()).verified).toBe(false);
+    const body = await bad.json();
+    expect(body.verified).toBe(false);
+    expect(body.reason).toBe("invalid_accessible_answer");
+  });
 
-    // fresh challenge for correct path
-    const stored2 = generateChallengeByType("physical", { difficulty: 1 });
-    if (!isPhysicalChallenge(stored2)) return;
-    const token2 = signChallengeToken({
-      challengeId: stored2.challengeId,
-      sessionId: stored2.sessionId,
-      nonce: stored2.nonce,
-      issuedAt: stored2.issuedAt,
-      expiresAt: stored2.expiresAt,
-      difficulty: stored2.difficulty,
-      challengeType: stored2.challengeType,
-    });
-    await getChallengeStore().createChallenge(stored2);
-    await getSessionStore().put({
-      sessionId: stored2.sessionId,
-      issuedAt: Date.now(),
-      expiresAt: Date.now() + 60_000,
-      environment: "test",
-    });
-    const cookie2 = `${SESSION_COOKIE}=${signSessionToken(stored2.sessionId, Date.now() + 60_000)}`;
-    await startAndBackdate(
-      { challengeId: stored2.challengeId, token: token2 },
-      cookie2,
-      20_000,
-    );
-    const good = await verifyChallenge(
-      jsonRequest(
-        "http://localhost/api/verify",
-        {
-          challengeId: stored2.challengeId,
-          token: token2,
-          interaction: {
-            accessibleAnswers: {
-              placement: stored2.groundTruth.accessiblePlacementKey,
-            },
-          },
-          telemetry: { interactionEventCount: 2, completionTimeMs: 5000 },
-        },
-        cookie2,
-      ),
-    );
-    const goodBody = await good.json();
-    expect(goodBody.verified).toBe(true);
+  it("physical accepts a careful placement trajectory", async () => {
+    const stored = generateChallengeByType("physical", { difficulty: 1 });
+    expect(isPhysicalChallenge(stored)).toBe(true);
+    if (!isPhysicalChallenge(stored)) return;
+    const { validatePhysical } = await import("@/lib/challenge/physical");
+    const agent = stored.renderConfiguration.bodies.find((b) => b.id === "agent")!;
+    const platform = stored.renderConfiguration.platform;
+    const start = {
+      x: agent.start.x + agent.width / 2,
+      y: agent.start.y + agent.height / 2,
+    };
+    // Arc above the protected block onto the platform left side (slow enough)
+    const samples = [
+      { t: 0, x: start.x, y: start.y, objectId: "agent" },
+      { t: 800, x: start.x, y: 80, objectId: "agent" },
+      { t: 1600, x: platform.x + 36, y: 80, objectId: "agent" },
+      { t: 2400, x: platform.x + 36, y: platform.y + platform.height / 2, objectId: "agent" },
+    ];
+    const result = validatePhysical(stored, { interaction: { samples } });
+    expect(result).toEqual({ correct: true });
   });
 
   it("dynamic_path rejects incomplete path", async () => {

@@ -4,13 +4,16 @@ import { useEffect, useRef, useState } from "react";
 import type { NaturalChallengeRenderProps } from "@/components/agentproof/NaturalChallengeShell";
 import type { InteractionSample } from "@/lib/challenge/core/types";
 
+const AGENT_R = 18;
+const STEP = 28;
+
 export function DragAvoidChallenge({
   challenge,
   poses,
   interactive,
+  elapsedMs,
   onSamples,
   accessibleMode,
-  onAccessibleSubmit,
 }: NaturalChallengeRenderProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [agent, setAgent] = useState(() => {
@@ -22,16 +25,32 @@ export function DragAvoidChallenge({
   const dragging = useRef(false);
   const samples = useRef<InteractionSample[]>([]);
   const count = useRef(0);
-  const started = useRef(0);
-  const [corridor, setCorridor] = useState<string[]>([]);
-
+  const clockRef = useRef({ baseElapsed: 0, basePerf: 0 });
+  const agentRef = useRef(agent);
   useEffect(() => {
-    started.current = performance.now();
-  }, []);
+    clockRef.current = { baseElapsed: elapsedMs, basePerf: performance.now() };
+  }, [elapsedMs]);
+  useEffect(() => {
+    agentRef.current = agent;
+  }, [agent]);
+  const pushSample = (x: number, y: number, kind: InteractionSample["kind"]) => {
+    samples.current.push({
+      t: (() => { const c = clockRef.current; return Math.max(0, c.baseElapsed + (performance.now() - c.basePerf)); })(),
+      x,
+      y,
+      objectId: "agent",
+      kind,
+    });
+    if (samples.current.length > 800) {
+      samples.current = samples.current.slice(-600);
+    }
+    count.current += 1;
+    onSamples([...samples.current], count.current);
+  };
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas) return;
+    if (!canvas || accessibleMode) return;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
     const { width, height } = challenge.scene;
@@ -64,9 +83,10 @@ export function DragAvoidChallenge({
         }
       }
 
+      const a = agentRef.current;
       ctx.beginPath();
       ctx.fillStyle = "#3d8bfd";
-      ctx.arc(agent.x, agent.y, 18, 0, Math.PI * 2);
+      ctx.arc(a.x, a.y, AGENT_R, 0, Math.PI * 2);
       ctx.fill();
       ctx.strokeStyle = "#f8fafc";
       ctx.lineWidth = 2;
@@ -76,7 +96,7 @@ export function DragAvoidChallenge({
     };
     raf = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(raf);
-  }, [agent, challenge.scene, poses]);
+  }, [accessibleMode, challenge.scene, poses]);
 
   const toLocal = (clientX: number, clientY: number) => {
     const canvas = canvasRef.current!;
@@ -85,16 +105,6 @@ export function DragAvoidChallenge({
       x: ((clientX - rect.left) * challenge.scene.width) / rect.width,
       y: ((clientY - rect.top) * challenge.scene.height) / rect.height,
     };
-  };
-
-  const pushSample = (x: number, y: number, kind: InteractionSample["kind"]) => {
-    const t = performance.now() - started.current;
-    samples.current.push({ t, x, y, objectId: "agent", kind });
-    if (samples.current.length > 800) {
-      samples.current = samples.current.slice(-600);
-    }
-    count.current += 1;
-    onSamples([...samples.current], count.current);
   };
 
   const onPointerDown = (e: React.PointerEvent) => {
@@ -120,41 +130,73 @@ export function DragAvoidChallenge({
     pushSample(p.x, p.y, "up");
   };
 
+  const nudge = (dx: number, dy: number) => {
+    if (!interactive) return;
+    const next = {
+      x: Math.min(
+        challenge.scene.width - AGENT_R,
+        Math.max(AGENT_R, agent.x + dx),
+      ),
+      y: Math.min(
+        challenge.scene.height - AGENT_R,
+        Math.max(AGENT_R, agent.y + dy),
+      ),
+    };
+    setAgent(next);
+    pushSample(next.x, next.y, "move");
+  };
+
+  const obstacles = poses.filter(
+    (p) => p.role === "obstacle" || p.id.startsWith("obstacle_"),
+  );
+  const target = poses.find((p) => p.role === "target" || p.id === "target");
+  const live = [
+    `Agent at ${Math.round(agent.x)}, ${Math.round(agent.y)}.`,
+    target
+      ? `Target at ${Math.round(target.x)}, ${Math.round(target.y)}.`
+      : null,
+    ...obstacles.map(
+      (o) => `Obstacle ${o.id} at ${Math.round(o.x)}, ${Math.round(o.y)}.`,
+    ),
+  ]
+    .filter(Boolean)
+    .join(" ");
+
   if (accessibleMode) {
-    const options = ["north", "center", "south"];
     return (
       <div className="space-y-4 rounded-md border border-slate-800 bg-slate-950/50 p-4">
         <p className="text-slate-300">
-          Choose a safe corridor sequence (one step per obstacle). This is a
-          structured equivalent — not colour- or drag-dependent.
+          Use discrete moves to reach the green target while avoiding obstacles.
+          Live positions update from the server (no secret codes).
+        </p>
+        <p className="sr-only" aria-live="polite">
+          {live}
+        </p>
+        <p className="font-mono text-xs text-slate-400" aria-hidden>
+          {live}
         </p>
         <div className="flex flex-wrap gap-2">
-          {options.map((opt) => (
+          {(
+            [
+              ["Up", 0, -STEP],
+              ["Down", 0, STEP],
+              ["Left", -STEP, 0],
+              ["Right", STEP, 0],
+            ] as const
+          ).map(([label, dx, dy]) => (
             <button
-              key={opt}
+              key={label}
               type="button"
-              className="rounded border border-slate-600 px-3 py-2 text-sm capitalize text-slate-100 hover:border-cyan-400"
-              onClick={() => setCorridor((c) => [...c, opt])}
+              className="rounded border border-slate-600 px-3 py-2 text-sm text-slate-100 hover:border-cyan-400"
+              onClick={() => nudge(dx, dy)}
             >
-              {opt}
+              {label}
             </button>
           ))}
-          <button
-            type="button"
-            className="rounded border border-slate-700 px-3 py-2 text-sm text-slate-400"
-            onClick={() => setCorridor([])}
-          >
-            Clear
-          </button>
         </div>
-        <p className="font-mono text-sm text-cyan-300">{corridor.join(" → ") || "—"}</p>
-        <button
-          type="button"
-          className="rounded bg-cyan-500 px-3 py-2 text-sm font-semibold text-slate-950"
-          onClick={() => onAccessibleSubmit({ path: corridor.join(",") })}
-        >
-          Lock accessible answer
-        </button>
+        <p className="text-sm text-slate-400">
+          Position: {Math.round(agent.x)}, {Math.round(agent.y)}
+        </p>
       </div>
     );
   }

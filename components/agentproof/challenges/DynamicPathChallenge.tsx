@@ -11,13 +11,16 @@ type GateLayout = {
   gateThickness: number;
 };
 
+const STEP = 24;
+const BALL_R = 16;
+
 export function DynamicPathChallenge({
   challenge,
   poses,
   interactive,
+  elapsedMs,
   onSamples,
   accessibleMode,
-  onAccessibleSubmit,
 }: NaturalChallengeRenderProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const layout = challenge.scene.layout as {
@@ -29,16 +32,26 @@ export function DynamicPathChallenge({
   const dragging = useRef(false);
   const samples = useRef<InteractionSample[]>([]);
   const count = useRef(0);
-  const started = useRef(0);
-  const [slots, setSlots] = useState<number[]>([]);
-
+  const clockRef = useRef({ baseElapsed: 0, basePerf: 0 });
+  const ballRef = useRef(ball);
   useEffect(() => {
-    started.current = performance.now();
-  }, []);
+    clockRef.current = { baseElapsed: elapsedMs, basePerf: performance.now() };
+  }, [elapsedMs]);
+  useEffect(() => {
+    ballRef.current = ball;
+  }, [ball]);
+  const push = (x: number, y: number, kind: InteractionSample["kind"]) => {
+    samples.current.push({ t: (() => { const c = clockRef.current; return Math.max(0, c.baseElapsed + (performance.now() - c.basePerf)); })(), x, y, objectId: "ball", kind });
+    if (samples.current.length > 800) {
+      samples.current = samples.current.slice(-600);
+    }
+    count.current += 1;
+    onSamples([...samples.current], count.current);
+  };
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas) return;
+    if (!canvas || accessibleMode) return;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
     const { width, height } = challenge.scene;
@@ -48,7 +61,6 @@ export function DynamicPathChallenge({
       ctx.fillStyle = "#0b1220";
       ctx.fillRect(0, 0, width, height);
 
-      // Goal line
       ctx.strokeStyle = "#20c997";
       ctx.setLineDash([6, 6]);
       ctx.beginPath();
@@ -62,14 +74,12 @@ export function DynamicPathChallenge({
         const center = opening?.y ?? height / 2;
         const half = gate.openingHeight / 2;
         ctx.fillStyle = "#64748b";
-        // top wall
         ctx.fillRect(
           gate.x - gate.gateThickness / 2,
           0,
           gate.gateThickness,
           Math.max(0, center - half),
         );
-        // bottom wall
         ctx.fillRect(
           gate.x - gate.gateThickness / 2,
           center + half,
@@ -85,16 +95,17 @@ export function DynamicPathChallenge({
         );
       }
 
+      const b = ballRef.current;
       ctx.beginPath();
       ctx.fillStyle = "#ffc107";
-      ctx.arc(ball.x, ball.y, 16, 0, Math.PI * 2);
+      ctx.arc(b.x, b.y, BALL_R, 0, Math.PI * 2);
       ctx.fill();
 
       raf = requestAnimationFrame(loop);
     };
     raf = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(raf);
-  }, [ball, challenge.scene, layout, poses]);
+  }, [accessibleMode, challenge.scene, layout, poses]);
 
   const toLocal = (clientX: number, clientY: number) => {
     const canvas = canvasRef.current!;
@@ -105,19 +116,12 @@ export function DynamicPathChallenge({
     };
   };
 
-  const push = (x: number, y: number, kind: InteractionSample["kind"]) => {
-    const t = performance.now() - started.current;
-    samples.current.push({ t, x, y, objectId: "ball", kind });
-    if (samples.current.length > 800) samples.current = samples.current.slice(-600);
-    count.current += 1;
-    onSamples([...samples.current], count.current);
-  };
-
   const onPointerDown = (e: React.PointerEvent) => {
     if (!interactive || accessibleMode) return;
     const p = toLocal(e.clientX, e.clientY);
     if (Math.hypot(p.x - ball.x, p.y - ball.y) > 28) return;
     dragging.current = true;
+    (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
     push(p.x, p.y, "down");
   };
 
@@ -135,42 +139,62 @@ export function DynamicPathChallenge({
     push(p.x, p.y, "up");
   };
 
+  const nudge = (dx: number, dy: number) => {
+    if (!interactive) return;
+    const next = {
+      x: Math.min(
+        challenge.scene.width - BALL_R,
+        Math.max(BALL_R, ball.x + dx),
+      ),
+      y: Math.min(
+        challenge.scene.height - BALL_R,
+        Math.max(BALL_R, ball.y + dy),
+      ),
+    };
+    setBall(next);
+    push(next.x, next.y, "move");
+  };
+
+  const openings = poses.filter((p) => p.role === "opening");
+  const live = [
+    `Ball at ${Math.round(ball.x)}, ${Math.round(ball.y)}.`,
+    `Goal line at x=${layout.goalX}.`,
+    ...openings.map(
+      (o) =>
+        `Opening ${o.id.replace("_opening", "")} center y=${Math.round(o.y)}.`,
+    ),
+  ].join(" ");
+
   if (accessibleMode) {
     return (
       <div className="space-y-4 rounded-md border border-slate-800 bg-slate-950/50 p-4">
         <p className="text-slate-300">
-          For each gate, pick opening slot 0 (top), 1 (middle), or 2 (bottom).
-          No continuous tracking required.
+          Nudge the ball through each moving opening to the goal line. Opening
+          centers are announced from live server frames.
         </p>
+        <p className="sr-only" aria-live="polite">
+          {live}
+        </p>
+        <p className="font-mono text-xs text-slate-400">{live}</p>
         <div className="flex flex-wrap gap-2">
-          {[0, 1, 2].map((slot) => (
+          {(
+            [
+              ["Up", 0, -STEP],
+              ["Down", 0, STEP],
+              ["Left", -STEP, 0],
+              ["Right", STEP, 0],
+            ] as const
+          ).map(([label, dx, dy]) => (
             <button
-              key={slot}
+              key={label}
               type="button"
               className="rounded border border-slate-600 px-3 py-2 text-sm text-slate-100"
-              onClick={() => setSlots((s) => [...s, slot])}
+              onClick={() => nudge(dx, dy)}
             >
-              Slot {slot}
+              {label}
             </button>
           ))}
-          <button
-            type="button"
-            className="rounded border border-slate-700 px-3 py-2 text-sm text-slate-400"
-            onClick={() => setSlots([])}
-          >
-            Clear
-          </button>
         </div>
-        <p className="font-mono text-sm text-cyan-300">
-          {slots.length ? slots.join(", ") : "—"}
-        </p>
-        <button
-          type="button"
-          className="rounded bg-cyan-500 px-3 py-2 text-sm font-semibold text-slate-950"
-          onClick={() => onAccessibleSubmit({ slots: slots.join(",") })}
-        >
-          Lock accessible answer
-        </button>
       </div>
     );
   }

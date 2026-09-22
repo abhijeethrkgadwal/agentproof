@@ -74,7 +74,7 @@ export function toDragAvoidPublic(
       },
     },
     accessibilityHint:
-      "Accessible mode: choose a safe corridor sequence with the keyboard. Pilot only — not WCAG-certified.",
+      "Accessible mode: discrete arrow nudges with live position announcements. Pilot only — not WCAG-certified.",
   };
 }
 
@@ -147,18 +147,12 @@ export function validateDragAvoid(
   const c = cfg(challenge);
   const truth = gt(challenge);
 
-  // Accessible fallback path
-  if (input.interaction?.accessibleAnswers) {
-    const path = String(input.interaction.accessibleAnswers.path ?? "")
-      .split(",")
-      .map((s) => s.trim())
-      .filter(Boolean);
-    if (
-      path.length === truth.accessibleSafePath.length &&
-      path.every((v, i) => v === truth.accessibleSafePath[i])
-    ) {
-      return { correct: true };
-    }
+  // Accessible mode uses the same trajectory samples (discrete nudges).
+  // Reject legacy secret-path answers — they are not human-solvable.
+  if (
+    input.interaction?.accessibleAnswers &&
+    (!input.interaction.samples || input.interaction.samples.length < 3)
+  ) {
     return { correct: false, reason: "invalid_accessible_answer" };
   }
 
@@ -185,6 +179,9 @@ export function validateDragAvoid(
   for (let i = 1; i < agentSamples.length; i += 1) {
     const a = agentSamples[i - 1]!;
     const b = agentSamples[i]!;
+    if (b.t < a.t) {
+      return { correct: false, reason: "invalid_trajectory" };
+    }
     const dt = Math.max(1, b.t - a.t) / 1000;
     const dist = Math.hypot(b.x - a.x, b.y - a.y);
     if (dist / dt > truth.maxSpeedPxPerSec * 1.35) {
@@ -192,26 +189,48 @@ export function validateDragAvoid(
     }
   }
 
-  // Collisions with obstacles at sample times
-  for (const sample of agentSamples) {
-    const t = Math.max(0, Math.min(sample.t, c.durationMs));
+  const obstacleAt = (o: (typeof c.obstacles)[number], t: number) => {
+    const pos = segmentPositionAt(o.start, o.segments, t);
+    return {
+      x: Math.min(c.width - o.size, Math.max(o.size, pos.x)),
+      y: Math.min(c.height - o.size, Math.max(o.size, pos.y)),
+    };
+  };
+
+  const collides = (x: number, y: number, t: number) => {
     for (const o of c.obstacles) {
-      const pos = segmentPositionAt(o.start, o.segments, t);
+      const pos = obstacleAt(o, t);
       if (
         circlesOverlap(
-          { x: sample.x, y: sample.y },
+          { x, y },
           c.agent.size,
           pos,
           o.size,
           truth.collisionPadding,
         )
       ) {
-        return { correct: false, reason: "collision" };
+        return true;
       }
+    }
+    return false;
+  };
+
+  // Collisions at sample times
+  for (const sample of agentSamples) {
+    const t = Math.max(0, Math.min(sample.t, c.durationMs));
+    if (collides(sample.x, sample.y, t)) {
+      return { correct: false, reason: "collision" };
     }
   }
 
+  // Hold final pose through remaining window (idle collision check)
   const last = agentSamples[agentSamples.length - 1]!;
+  for (let t = last.t; t <= c.durationMs; t += 100) {
+    if (collides(last.x, last.y, t)) {
+      return { correct: false, reason: "collision" };
+    }
+  }
+
   if (
     !pointInCircle(
       { x: last.x, y: last.y },

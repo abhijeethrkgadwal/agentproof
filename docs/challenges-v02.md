@@ -25,7 +25,7 @@ Shared architecture: `lib/challenge/core/` + per-type modules under `lib/challen
 - **Server validation:** start proximity, trajectory continuity/speed, collisions vs authoritative obstacle positions, final target placement, lifecycle.
 - **Client-visible:** agent/target identity, target position, obstacle count — not segments/starts.
 - **Attack surface:** frame observation + trajectory forging; cannot solve from issued JSON alone.
-- **Accessibility:** keyboard corridor labels (`north` / `center` / `south`). Pilot — not WCAG-certified.
+- **Accessibility:** discrete arrow/nudge controls with live position announcements from server frames (same trajectory validation as pointer). Pilot — not WCAG-certified.
 - **Difficulty:** obstacle count, speed, segment complexity (UI exposes 1–2).
 - **Lab strategy:** placeholder attacker only until a real interaction harness exists.
 
@@ -37,7 +37,7 @@ Shared architecture: `lib/challenge/core/` + per-type modules under `lib/challen
 - **Server validation:** re-simulates agent path; checks agent on platform and protected body within bounds.
 - **Client-visible:** body starts, platform rect — not protectedBounds / placement key.
 - **Attack surface:** forged final positions; server ignores client “success” flags.
-- **Accessibility:** left/center/right placement choice.
+- **Accessibility:** discrete nudges with live announcements; same physics validation.
 - **Difficulty:** extra static props + tighter timing window.
 - **Lab strategy:** placeholder only.
 
@@ -49,7 +49,7 @@ Shared architecture: `lib/challenge/core/` + per-type modules under `lib/challen
 - **Server validation:** gate crossings through openings at sample times; reach goalX; speed limits.
 - **Client-visible:** gate x + opening height; current opening center via frames.
 - **Attack surface:** predicting future openings from sparse frames — still requires interaction.
-- **Accessibility:** slot indices 0–2 per gate.
+- **Accessibility:** discrete nudges with live opening centers from frames.
 - **Difficulty:** gate count, opening size, vertical speed.
 - **Lab strategy:** placeholder only.
 

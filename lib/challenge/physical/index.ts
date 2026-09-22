@@ -127,7 +127,7 @@ export function toPhysicalPublic(
       },
     },
     accessibilityHint:
-      "Accessible mode: choose the safe platform placement (left / center / right). Pilot only — not WCAG-certified.",
+      "Accessible mode: discrete nudges with live position announcements. Pilot only — not WCAG-certified.",
   };
 }
 
@@ -178,11 +178,10 @@ export function validatePhysical(
   const c = cfg(challenge);
   const truth = gt(challenge);
 
-  if (input.interaction?.accessibleAnswers) {
-    const key = String(input.interaction.accessibleAnswers.placement ?? "");
-    if (key === truth.accessiblePlacementKey) {
-      return { correct: true };
-    }
+  if (
+    input.interaction?.accessibleAnswers &&
+    (!input.interaction.samples || input.interaction.samples.length < 2)
+  ) {
     return { correct: false, reason: "invalid_accessible_answer" };
   }
 
@@ -206,6 +205,9 @@ export function validatePhysical(
   for (let i = 1; i < samples.length; i += 1) {
     const a = samples[i - 1]!;
     const b = samples[i]!;
+    if (b.t < a.t) {
+      return { correct: false, reason: "invalid_trajectory" };
+    }
     const dt = Math.max(1, b.t - a.t) / 1000;
     if (Math.hypot(b.x - a.x, b.y - a.y) / dt > truth.maxAgentSpeed * 1.4) {
       return { correct: false, reason: "invalid_trajectory" };

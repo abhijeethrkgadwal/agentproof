@@ -82,7 +82,7 @@ export function toDynamicPathPublic(
       },
     },
     accessibilityHint:
-      "Accessible mode: pick the safe opening slot for each gate (0–2). Pilot only — not WCAG-certified.",
+      "Accessible mode: discrete nudges with live opening announcements. Pilot only — not WCAG-certified.",
   };
 }
 
@@ -147,15 +147,10 @@ export function validateDynamicPath(
   const c = cfg(challenge);
   const truth = gt(challenge);
 
-  if (input.interaction?.accessibleAnswers) {
-    const raw = String(input.interaction.accessibleAnswers.slots ?? "");
-    const slots = raw.split(",").map((s) => Number(s.trim()));
-    if (
-      slots.length === truth.accessibleGateSlots.length &&
-      slots.every((v, i) => v === truth.accessibleGateSlots[i])
-    ) {
-      return { correct: true };
-    }
+  if (
+    input.interaction?.accessibleAnswers &&
+    (!input.interaction.samples || input.interaction.samples.length < 3)
+  ) {
     return { correct: false, reason: "invalid_accessible_answer" };
   }
 
@@ -174,20 +169,26 @@ export function validateDynamicPath(
   for (let i = 1; i < samples.length; i += 1) {
     const a = samples[i - 1]!;
     const b = samples[i]!;
+    if (b.t < a.t) {
+      return { correct: false, reason: "invalid_trajectory" };
+    }
     const dt = Math.max(1, b.t - a.t) / 1000;
     if (Math.hypot(b.x - a.x, b.y - a.y) / dt > truth.maxSpeedPxPerSec * 1.35) {
       return { correct: false, reason: "invalid_trajectory" };
     }
   }
 
-  // Must cross each gate through the opening (not the wall)
+  // Must cross each gate through the opening (closest sample to gate x)
   for (const gate of c.gates) {
-    const crossing = samples.find(
-      (s) => Math.abs(s.x - gate.x) <= gate.gateThickness + c.ball.size,
+    const band = samples.filter(
+      (s) => Math.abs(s.x - gate.x) <= gate.gateThickness + c.ball.size + 4,
     );
-    if (!crossing) {
+    if (band.length === 0) {
       return { correct: false, reason: "incomplete_path" };
     }
+    const crossing = band.reduce((best, s) =>
+      Math.abs(s.x - gate.x) < Math.abs(best.x - gate.x) ? s : best,
+    );
     const center = gateOpeningCenter(challenge, gate.id, crossing.t);
     const half = gate.openingHeight / 2 - c.ball.size * 0.6;
     if (Math.abs(crossing.y - center) > half) {
