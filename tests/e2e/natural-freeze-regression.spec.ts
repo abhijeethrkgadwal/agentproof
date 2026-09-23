@@ -1,6 +1,6 @@
 /**
- * Smoke: second-run obstacle/gate motion must change canvas pixels over time.
- * Run: npx playwright test tests/e2e/natural-freeze-regression.spec.ts
+ * Smoke: second-run obstacle/gate motion must change canvas pixels over time,
+ * including after a first full run that would exhaust the old 60/min frame budget.
  */
 import { expect, test } from "@playwright/test";
 import path from "node:path";
@@ -8,13 +8,22 @@ import fs from "node:fs";
 
 const OUT = "/opt/cursor/artifacts/screenshots";
 
-async function assertCanvasMotion(page: import("@playwright/test").Page, canvasTestId: string) {
+async function assertCanvasMotion(
+  page: import("@playwright/test").Page,
+  canvasTestId: string,
+  samples = 3,
+) {
   const canvas = page.getByTestId(canvasTestId);
   await expect(canvas).toBeVisible();
-  const a = await canvas.evaluate((el: HTMLCanvasElement) => el.toDataURL());
-  await page.waitForTimeout(350);
-  const b = await canvas.evaluate((el: HTMLCanvasElement) => el.toDataURL());
-  expect(a).not.toEqual(b);
+  let prev = await canvas.evaluate((el: HTMLCanvasElement) => el.toDataURL());
+  let changes = 0;
+  for (let i = 0; i < samples; i += 1) {
+    await page.waitForTimeout(280);
+    const next = await canvas.evaluate((el: HTMLCanvasElement) => el.toDataURL());
+    if (next !== prev) changes += 1;
+    prev = next;
+  }
+  expect(changes).toBeGreaterThanOrEqual(2);
 }
 
 test.describe("natural challenge freeze regression", () => {
@@ -27,7 +36,9 @@ test.describe("natural challenge freeze regression", () => {
   }) => {
     await page.goto("/demo/drag-avoid");
     await page.getByTestId("start-challenge").click();
-    await assertCanvasMotion(page, "drag-avoid-canvas");
+    // Burn ~4s of frame polls like a human first attempt
+    await assertCanvasMotion(page, "drag-avoid-canvas", 4);
+    await page.waitForTimeout(2500);
     await page.screenshot({
       path: path.join(OUT, "drag-avoid-run1.png"),
       fullPage: true,
@@ -38,14 +49,12 @@ test.describe("natural challenge freeze regression", () => {
       timeout: 15_000,
     });
     await page.getByTestId("start-challenge").click();
-    await assertCanvasMotion(page, "drag-avoid-canvas");
+    await assertCanvasMotion(page, "drag-avoid-canvas", 4);
     await page.screenshot({
       path: path.join(OUT, "drag-avoid-run2.png"),
       fullPage: true,
     });
 
-    // Verify unlocks after ~1.2s even without finishing goal (samples needed —
-    // use accessible nudges to generate samples quickly).
     await page.getByTestId("toggle-accessible").click();
     await page.getByRole("button", { name: "Right" }).click();
     await page.getByRole("button", { name: "Right" }).click();
@@ -60,7 +69,8 @@ test.describe("natural challenge freeze regression", () => {
   }) => {
     await page.goto("/demo/dynamic-path");
     await page.getByTestId("start-challenge").click();
-    await assertCanvasMotion(page, "dynamic-path-canvas");
+    await assertCanvasMotion(page, "dynamic-path-canvas", 4);
+    await page.waitForTimeout(2500);
     await page.screenshot({
       path: path.join(OUT, "dynamic-path-run1.png"),
       fullPage: true,
@@ -71,7 +81,7 @@ test.describe("natural challenge freeze regression", () => {
       timeout: 15_000,
     });
     await page.getByTestId("start-challenge").click();
-    await assertCanvasMotion(page, "dynamic-path-canvas");
+    await assertCanvasMotion(page, "dynamic-path-canvas", 4);
     await page.screenshot({
       path: path.join(OUT, "dynamic-path-run2.png"),
       fullPage: true,

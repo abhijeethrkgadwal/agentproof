@@ -3,7 +3,7 @@ import { clientKeyFromRequest, jsonError, jsonOk } from "@/lib/api/http";
 import { assertLifecycle } from "@/lib/challenge/motion";
 import { toFrameResponse } from "@/lib/challenge/public";
 import { isExpired } from "@/lib/security/expiry";
-import { checkRateLimit } from "@/lib/security/rateLimit";
+import { checkFrameRateLimit } from "@/lib/security/rateLimit";
 import { resolveRequestSession } from "@/lib/security/session";
 import { verifyChallengeToken } from "@/lib/security/signing";
 import { getChallengeStore } from "@/lib/storage/challengeStore";
@@ -20,7 +20,7 @@ const FrameSchema = z.object({
  * Clients cannot fetch the future motion plan.
  */
 export async function POST(request: Request) {
-  const rate = await checkRateLimit(`frame:${clientKeyFromRequest(request)}`);
+  const rate = await checkFrameRateLimit(`frame:${clientKeyFromRequest(request)}`);
   if (!rate.allowed) {
     return jsonError(429, "rate_limited", { retryAfterMs: rate.retryAfterMs });
   }

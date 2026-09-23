@@ -34,6 +34,15 @@ export function getRateLimitMaxRequests(): number {
   return Number(process.env.AGENTPROOF_RATE_LIMIT_MAX ?? 60);
 }
 
+/**
+ * Frame polls run ~8–12×/sec while a challenge is active. The general API
+ * budget (60/min) is far too low and freezes obstacle/gate motion mid-run
+ * (especially on a second "New challenge"). Frames get a dedicated ceiling.
+ */
+export function getFrameRateLimitMaxRequests(): number {
+  return Number(process.env.AGENTPROOF_FRAME_RATE_LIMIT_MAX ?? 1200);
+}
+
 /** memory (default) | redis */
 export function getStorageBackend(): "memory" | "redis" {
   const raw = (process.env.AGENTPROOF_STORAGE_BACKEND ?? "memory").toLowerCase();

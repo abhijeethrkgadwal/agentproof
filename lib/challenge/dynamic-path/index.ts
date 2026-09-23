@@ -95,7 +95,8 @@ export function toDynamicPathFrame(
   elapsedMs: number,
 ): FrameResponse {
   const c = cfg(challenge);
-  const t = Math.max(0, Math.min(elapsedMs, c.durationMs));
+  const cycle = c.durationMs > 0 ? elapsedMs % c.durationMs : 0;
+  const t = Math.max(0, Math.min(cycle, c.durationMs));
   const poses: ObjectPose[] = [
     {
       id: c.ball.id,
@@ -133,7 +134,7 @@ export function toDynamicPathFrame(
   return {
     challengeId: challenge.challengeId,
     lifecycle: challenge.lifecycle,
-    elapsedMs: t,
+    elapsedMs: Math.min(elapsedMs, c.durationMs),
     durationMs: c.durationMs,
     complete: elapsedMs >= c.durationMs,
     poses,
@@ -187,7 +188,11 @@ export function validateDynamicPath(
     const crossing = band.reduce((best, s) =>
       Math.abs(s.x - gate.x) < Math.abs(best.x - gate.x) ? s : best,
     );
-    const center = gateOpeningCenter(challenge, gate.id, crossing.t);
+    const cycleT =
+      c.durationMs > 0
+        ? ((crossing.t % c.durationMs) + c.durationMs) % c.durationMs
+        : crossing.t;
+    const center = gateOpeningCenter(challenge, gate.id, cycleT);
     const half = gate.openingHeight / 2 - c.ball.size * 0.35;
     if (Math.abs(crossing.y - center) > half) {
       return { correct: false, reason: "gate_collision" };

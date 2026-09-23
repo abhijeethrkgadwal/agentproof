@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import {
   VerificationResult,
@@ -28,6 +28,9 @@ export type NaturalChallengeRenderProps = {
   /** Client hint: agent reached goal — enables early verify. */
   onGoalReached?: () => void;
 };
+
+const FRAME_POLL_MS = 120;
+const FRAME_POLL_MAX_MS = 800;
 
 export function NaturalChallengeShell({
   challengeType,
@@ -60,10 +63,14 @@ export function NaturalChallengeShell({
   const [result, setResult] = useState<VerificationPayload | null>(null);
   /** Bumps on each new challenge so child canvases fully remount. */
   const [runKey, setRunKey] = useState(0);
+  const pollDelayRef = useRef(FRAME_POLL_MS);
+  const challengeRef = useRef(challenge);
+  useEffect(() => {
+    challengeRef.current = challenge;
+  }, [challenge]);
 
   const durationMs = challenge?.scene.durationMs ?? 0;
-  // Match server natural floor (~1.2s). Goal-reached only affects messaging;
-  // both client and server still require the anti-spam floor.
+  // Match server natural floor (~1.2s).
   const minActiveMs = 1200;
   const canVerify =
     startedAt !== null &&
@@ -100,6 +107,7 @@ export function NaturalChallengeShell({
     setSamples([]);
     setGoalReached(false);
     setRunKey((k) => k + 1);
+    pollDelayRef.current = FRAME_POLL_MS;
 
     try {
       const response = await fetch("/api/challenge", {
@@ -142,6 +150,7 @@ export function NaturalChallengeShell({
     setGoalReached(false);
     setComplete(false);
     setElapsedMs(0);
+    pollDelayRef.current = FRAME_POLL_MS;
     try {
       const response = await fetch("/api/challenge/start", {
         method: "POST",
@@ -169,39 +178,73 @@ export function NaturalChallengeShell({
     }
   };
 
-  // Keep polling even after complete so UI/timer stay live until verify/reload.
+  // Local wall-clock keeps the timer moving even if frame polls are delayed.
   useEffect(() => {
-    if (loadState !== "active" || !challenge) return;
+    if (loadState !== "active" || startedAt === null) return;
+    const tick = () => {
+      const wall = Date.now() - startedAt;
+      const capped = durationMs > 0 ? Math.min(wall, durationMs) : wall;
+      setElapsedMs(capped);
+      if (durationMs > 0 && wall >= durationMs) setComplete(true);
+    };
+    tick();
+    const id = window.setInterval(tick, 100);
+    return () => window.clearInterval(id);
+  }, [loadState, startedAt, durationMs]);
+
+  // Progressive pose polls with backoff on 429 so a second run never freezes.
+  useEffect(() => {
+    if (loadState !== "active") return;
     let cancelled = false;
+    let timer = 0;
+
+    const schedule = (delay: number) => {
+      timer = window.setTimeout(() => void poll(), delay);
+    };
+
     const poll = async () => {
+      const current = challengeRef.current;
+      if (cancelled || !current) return;
       try {
         const response = await fetch("/api/challenge/frame", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
           body: JSON.stringify({
-            challengeId: challenge.challengeId,
-            token: challenge.token,
+            challengeId: current.challengeId,
+            token: current.token,
           }),
         });
-        if (!response.ok || cancelled) return;
+        if (cancelled) return;
+        if (response.status === 429) {
+          pollDelayRef.current = Math.min(
+            FRAME_POLL_MAX_MS,
+            Math.max(pollDelayRef.current * 1.5, 250),
+          );
+          schedule(pollDelayRef.current);
+          return;
+        }
+        if (!response.ok) {
+          schedule(pollDelayRef.current);
+          return;
+        }
         const data = (await response.json()) as FrameResponse;
         if (cancelled) return;
         setPoses(data.poses);
         setElapsedMs(data.elapsedMs);
         if (data.complete) setComplete(true);
+        pollDelayRef.current = FRAME_POLL_MS;
       } catch {
         // ignore transient poll errors
       }
+      if (!cancelled) schedule(pollDelayRef.current);
     };
+
     void poll();
-    const id = window.setInterval(() => void poll(), 80);
     return () => {
       cancelled = true;
-      window.clearInterval(id);
+      window.clearTimeout(timer);
     };
-    // Intentionally key on id/token so pose object identity doesn't restart polling.
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- challenge fields above
   }, [loadState, challenge?.challengeId, challenge?.token]);
 
   const onSamples = (next: InteractionSample[], count: number) => {
@@ -250,7 +293,9 @@ export function NaturalChallengeShell({
         const err =
           data.error === "premature_submit"
             ? "Too early — finish the goal or wait a bit longer."
-            : (data.error ?? `HTTP ${response.status}`);
+            : data.error === "rate_limited"
+              ? "Too many requests — wait a second and verify again."
+              : (data.error ?? `HTTP ${response.status}`);
         setVerifyStatus("error");
         setResult({
           verified: false,

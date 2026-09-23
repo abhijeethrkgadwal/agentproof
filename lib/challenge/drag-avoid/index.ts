@@ -106,7 +106,10 @@ export function toDragAvoidFrame(
   elapsedMs: number,
 ): FrameResponse {
   const c = cfg(challenge);
-  const t = Math.max(0, Math.min(elapsedMs, c.durationMs));
+  // Loop motion after the window so obstacles never appear "frozen" while the
+  // player is still interacting / verifying.
+  const cycle = c.durationMs > 0 ? elapsedMs % c.durationMs : 0;
+  const t = Math.max(0, Math.min(cycle, c.durationMs));
   const obstacles = obstaclePosesAt(challenge, t);
   const poses: ObjectPose[] = [
     {
@@ -132,7 +135,7 @@ export function toDragAvoidFrame(
   return {
     challengeId: challenge.challengeId,
     lifecycle: challenge.lifecycle,
-    elapsedMs: t,
+    elapsedMs: Math.min(elapsedMs, c.durationMs),
     durationMs: c.durationMs,
     complete: elapsedMs >= c.durationMs,
     poses,
@@ -187,8 +190,13 @@ export function validateDragAvoid(
   };
 
   const collides = (x: number, y: number, t: number) => {
+    // Match display loop: obstacles cycle after durationMs.
+    const cycleT =
+      c.durationMs > 0
+        ? ((t % c.durationMs) + c.durationMs) % c.durationMs
+        : t;
     for (const o of c.obstacles) {
-      const pos = obstacleAt(o, t);
+      const pos = obstacleAt(o, cycleT);
       if (
         circlesOverlap(
           { x, y },
