@@ -1,4 +1,8 @@
 import type { InteractionPayload, AnswerValidation } from "@/lib/challenge/core/types";
+import {
+  normalizeTrajectorySamples,
+  trajectoryWithinSpeed,
+} from "@/lib/challenge/core/trajectory";
 import { pointInRect, rectsOverlap } from "@/lib/challenge/motion";
 import type {
   FrameResponse,
@@ -185,8 +189,10 @@ export function validatePhysical(
     return { correct: false, reason: "invalid_accessible_answer" };
   }
 
-  const samples = (input.interaction?.samples ?? []).filter(
-    (s) => !s.objectId || s.objectId === truth.agentId,
+  const samples = normalizeTrajectorySamples(
+    (input.interaction?.samples ?? []).filter(
+      (s) => !s.objectId || s.objectId === truth.agentId,
+    ),
   );
   if (samples.length < 2) {
     return { correct: false, reason: "invalid_trajectory" };
@@ -198,20 +204,12 @@ export function validatePhysical(
     x: agentBody.start.x + agentBody.width / 2,
     y: agentBody.start.y + agentBody.height / 2,
   };
-  if (Math.hypot(first.x - startCenter.x, first.y - startCenter.y) > 60) {
+  if (Math.hypot(first.x - startCenter.x, first.y - startCenter.y) > 90) {
     return { correct: false, reason: "invalid_start" };
   }
 
-  for (let i = 1; i < samples.length; i += 1) {
-    const a = samples[i - 1]!;
-    const b = samples[i]!;
-    if (b.t < a.t) {
-      return { correct: false, reason: "invalid_trajectory" };
-    }
-    const dt = Math.max(1, b.t - a.t) / 1000;
-    if (Math.hypot(b.x - a.x, b.y - a.y) / dt > truth.maxAgentSpeed * 1.4) {
-      return { correct: false, reason: "invalid_trajectory" };
-    }
+  if (!trajectoryWithinSpeed(samples, Math.max(1600, truth.maxAgentSpeed * 4))) {
+    return { correct: false, reason: "invalid_trajectory" };
   }
 
   const path = samples.map((s) => ({ x: s.x, y: s.y }));
@@ -223,7 +221,14 @@ export function validatePhysical(
     x: agent.x + agent.width / 2,
     y: agent.y + agent.height / 2,
   };
-  if (!pointInRect(agentCenter, c.platform)) {
+  // Allow landing anywhere on the platform (including edges)
+  const platformExpanded = {
+    x: c.platform.x - 8,
+    y: c.platform.y - 8,
+    width: c.platform.width + 16,
+    height: c.platform.height + 16,
+  };
+  if (!pointInRect(agentCenter, platformExpanded)) {
     return { correct: false, reason: "missed_target" };
   }
 

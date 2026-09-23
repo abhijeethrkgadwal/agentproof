@@ -15,9 +15,21 @@ import { sanitizeTelemetry } from "@/lib/telemetry/sanitize";
 
 export const runtime = "nodejs";
 
-function minActiveMs(durationMs: number): number {
-  const ratio = Number(process.env.AGENTPROOF_MIN_ACTIVE_RATIO ?? "0.85");
-  return Math.floor(durationMs * Math.min(1, Math.max(0.5, ratio)));
+function minActiveMs(durationMs: number, challengeType: string): number {
+  // Temporal keeps a long observation window. Natural challenges only need a
+  // short anti-spam floor so finishing the goal (reach green / goal line)
+  // can verify promptly without waiting out most of the timer.
+  if (challengeType === "temporal") {
+    const ratio = Math.min(
+      1,
+      Math.max(0.2, Number(process.env.AGENTPROOF_MIN_ACTIVE_RATIO ?? "0.85")),
+    );
+    return Math.floor(durationMs * ratio);
+  }
+  return Math.max(
+    800,
+    Number(process.env.AGENTPROOF_NATURAL_MIN_ACTIVE_MS ?? "1200"),
+  );
 }
 
 export async function POST(request: Request) {
@@ -98,7 +110,7 @@ export async function POST(request: Request) {
 
   const durationMs = getChallengeDurationMs(challenge);
   const serverActiveMs = Date.now() - new Date(challenge.startedAt).getTime();
-  const requiredActive = minActiveMs(durationMs);
+  const requiredActive = minActiveMs(durationMs, challenge.challengeType);
   if (serverActiveMs < requiredActive) {
     return jsonError(425, "premature_submit", {
       serverActiveMs,

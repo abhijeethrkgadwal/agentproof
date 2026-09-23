@@ -2,7 +2,9 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { NaturalChallengeRenderProps } from "@/components/agentproof/NaturalChallengeShell";
+import { clientSampleTimeMs } from "@/lib/challenge/clientClock";
 import type { InteractionSample } from "@/lib/challenge/core/types";
+import type { ObjectPose } from "@/lib/challenge/types";
 
 const AGENT_R = 18;
 const STEP = 28;
@@ -11,9 +13,10 @@ export function DragAvoidChallenge({
   challenge,
   poses,
   interactive,
-  elapsedMs,
+  serverStartedAtMs,
   onSamples,
   accessibleMode,
+  onGoalReached,
 }: NaturalChallengeRenderProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [agent, setAgent] = useState(() => {
@@ -25,17 +28,35 @@ export function DragAvoidChallenge({
   const dragging = useRef(false);
   const samples = useRef<InteractionSample[]>([]);
   const count = useRef(0);
-  const clockRef = useRef({ baseElapsed: 0, basePerf: 0 });
   const agentRef = useRef(agent);
-  useEffect(() => {
-    clockRef.current = { baseElapsed: elapsedMs, basePerf: performance.now() };
-  }, [elapsedMs]);
+  const posesRef = useRef<ObjectPose[]>(poses);
+  const goalFired = useRef(false);
+
   useEffect(() => {
     agentRef.current = agent;
   }, [agent]);
+
+  useEffect(() => {
+    posesRef.current = poses;
+  }, [poses]);
+
+  const sampleTime = () => clientSampleTimeMs(serverStartedAtMs);
+
+  const checkGoal = (x: number, y: number) => {
+    if (goalFired.current || !onGoalReached) return;
+    const target = posesRef.current.find(
+      (p) => p.role === "target" || p.id === "target",
+    );
+    if (!target) return;
+    if (Math.hypot(x - target.x, y - target.y) <= target.size + AGENT_R * 0.5) {
+      goalFired.current = true;
+      onGoalReached();
+    }
+  };
+
   const pushSample = (x: number, y: number, kind: InteractionSample["kind"]) => {
     samples.current.push({
-      t: (() => { const c = clockRef.current; return Math.max(0, c.baseElapsed + (performance.now() - c.basePerf)); })(),
+      t: sampleTime(),
       x,
       y,
       objectId: "agent",
@@ -46,8 +67,10 @@ export function DragAvoidChallenge({
     }
     count.current += 1;
     onSamples([...samples.current], count.current);
+    checkGoal(x, y);
   };
 
+  // Stable RAF: read poses from ref so poll updates never restart the loop.
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas || accessibleMode) return;
@@ -57,11 +80,14 @@ export function DragAvoidChallenge({
 
     let raf = 0;
     const loop = () => {
+      const livePoses = posesRef.current;
       ctx.clearRect(0, 0, width, height);
       ctx.fillStyle = "#0b1220";
       ctx.fillRect(0, 0, width, height);
 
-      const target = poses.find((p) => p.role === "target" || p.id === "target");
+      const target = livePoses.find(
+        (p) => p.role === "target" || p.id === "target",
+      );
       if (target) {
         ctx.beginPath();
         ctx.fillStyle = target.color;
@@ -74,7 +100,7 @@ export function DragAvoidChallenge({
         ctx.stroke();
       }
 
-      for (const pose of poses) {
+      for (const pose of livePoses) {
         if (pose.role === "obstacle" || pose.id.startsWith("obstacle_")) {
           ctx.beginPath();
           ctx.fillStyle = pose.color;
@@ -96,7 +122,7 @@ export function DragAvoidChallenge({
     };
     raf = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(raf);
-  }, [accessibleMode, challenge.scene, poses]);
+  }, [accessibleMode, challenge.scene]);
 
   const toLocal = (clientX: number, clientY: number) => {
     const canvas = canvasRef.current!;

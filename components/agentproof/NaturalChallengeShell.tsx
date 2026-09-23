@@ -25,6 +25,8 @@ export type NaturalChallengeRenderProps = {
   serverStartedAtMs: number;
   onSamples: (samples: InteractionSample[], interactionCount: number) => void;
   accessibleMode: boolean;
+  /** Client hint: agent reached goal — enables early verify. */
+  onGoalReached?: () => void;
 };
 
 export function NaturalChallengeShell({
@@ -51,13 +53,18 @@ export function NaturalChallengeShell({
   const [events, setEvents] = useState<TelemetryEvent[]>([]);
   const [startedAt, setStartedAt] = useState<number | null>(null);
   const [interactionCount, setInteractionCount] = useState(0);
+  const [goalReached, setGoalReached] = useState(false);
   const [verifyStatus, setVerifyStatus] = useState<
     "idle" | "loading" | "success" | "error"
   >("idle");
   const [result, setResult] = useState<VerificationPayload | null>(null);
+  /** Bumps on each new challenge so child canvases fully remount. */
+  const [runKey, setRunKey] = useState(0);
 
   const durationMs = challenge?.scene.durationMs ?? 0;
-  const minActiveMs = Math.floor(durationMs * 0.85);
+  // Match server natural floor (~1.2s). Goal-reached only affects messaging;
+  // both client and server still require the anti-spam floor.
+  const minActiveMs = 1200;
   const canVerify =
     startedAt !== null &&
     samples.length >= 2 &&
@@ -91,6 +98,8 @@ export function NaturalChallengeShell({
     setElapsedMs(0);
     setComplete(false);
     setSamples([]);
+    setGoalReached(false);
+    setRunKey((k) => k + 1);
 
     try {
       const response = await fetch("/api/challenge", {
@@ -129,6 +138,10 @@ export function NaturalChallengeShell({
   const startChallenge = async () => {
     if (!challenge) return;
     setError(null);
+    setSamples([]);
+    setGoalReached(false);
+    setComplete(false);
+    setElapsedMs(0);
     try {
       const response = await fetch("/api/challenge/start", {
         method: "POST",
@@ -149,14 +162,16 @@ export function NaturalChallengeShell({
       setComplete(data.complete);
       setStartedAt(now);
       setLoadState("active");
+      setRunKey((k) => k + 1);
       pushEvent("challenge_started");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Start failed");
     }
   };
 
+  // Keep polling even after complete so UI/timer stay live until verify/reload.
   useEffect(() => {
-    if (loadState !== "active" || !challenge || complete) return;
+    if (loadState !== "active" || !challenge) return;
     let cancelled = false;
     const poll = async () => {
       try {
@@ -180,12 +195,14 @@ export function NaturalChallengeShell({
       }
     };
     void poll();
-    const id = window.setInterval(() => void poll(), 100);
+    const id = window.setInterval(() => void poll(), 80);
     return () => {
       cancelled = true;
       window.clearInterval(id);
     };
-  }, [loadState, challenge, complete]);
+    // Intentionally key on id/token so pose object identity doesn't restart polling.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- challenge fields above
+  }, [loadState, challenge?.challengeId, challenge?.token]);
 
   const onSamples = (next: InteractionSample[], count: number) => {
     setSamples(next);
@@ -200,7 +217,7 @@ export function NaturalChallengeShell({
     }
     if (!canVerify) {
       setError(
-        `Wait for the active window (~${(minActiveMs / 1000).toFixed(1)}s) before verifying.`,
+        `Keep going a moment longer (~${(minActiveMs / 1000).toFixed(1)}s min), or finish the goal.`,
       );
       return;
     }
@@ -232,7 +249,7 @@ export function NaturalChallengeShell({
       if (!response.ok) {
         const err =
           data.error === "premature_submit"
-            ? "Too early — keep interacting until the timer completes."
+            ? "Too early — finish the goal or wait a bit longer."
             : (data.error ?? `HTTP ${response.status}`);
         setVerifyStatus("error");
         setResult({
@@ -361,11 +378,15 @@ export function NaturalChallengeShell({
                   {(elapsedMs / 1000).toFixed(1)}s / {(durationMs / 1000).toFixed(1)}s
                 </span>
                 <span>
-                  {complete
-                    ? "Window complete — you can verify"
-                    : canVerify
-                      ? "Ready to verify"
-                      : "Active…"}
+                  {goalReached
+                    ? elapsedMs >= minActiveMs
+                      ? "Goal reached — ready to verify"
+                      : "Goal reached — unlocks verify shortly"
+                    : complete
+                      ? "Window complete"
+                      : canVerify
+                        ? "Ready to verify"
+                        : "Active…"}
                 </span>
               </div>
               <div className="h-1.5 overflow-hidden rounded-full bg-slate-800">
@@ -374,16 +395,19 @@ export function NaturalChallengeShell({
                   style={{ width: `${progress * 100}%` }}
                 />
               </div>
-              {renderScene({
-                challenge,
-                poses,
-                elapsedMs,
-                complete,
-                interactive: true,
-                serverStartedAtMs: startedAt,
-                onSamples,
-                accessibleMode,
-              })}
+              <div key={`${challenge.challengeId}-${runKey}`}>
+                {renderScene({
+                  challenge,
+                  poses,
+                  elapsedMs,
+                  complete,
+                  interactive: verifyStatus !== "success",
+                  serverStartedAtMs: startedAt,
+                  onSamples,
+                  accessibleMode,
+                  onGoalReached: () => setGoalReached(true),
+                })}
+              </div>
               <div className="flex flex-wrap items-center gap-3">
                 <button
                   type="button"
@@ -395,16 +419,18 @@ export function NaturalChallengeShell({
                   Verify
                 </button>
                 <span className="text-sm text-slate-400">
-                  {samples.length} interaction samples
+                  {samples.length} samples
                   {!canVerify && samples.length >= 2
                     ? ` · wait ~${Math.max(0, (minActiveMs - elapsedMs) / 1000).toFixed(1)}s`
-                    : ""}
+                    : goalReached
+                      ? " · goal reached"
+                      : ""}
                 </span>
               </div>
               <p className="text-xs text-slate-500">
                 This is a pilot accessibility implementation and is not
-                WCAG-certified. Accessible mode uses discrete moves with live
-                position announcements — same server validation as pointer drag.
+                WCAG-certified. Finish the goal to verify early, or wait for the
+                timer.
               </p>
             </>
           ) : null}

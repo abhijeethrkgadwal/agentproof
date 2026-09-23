@@ -2,7 +2,9 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { NaturalChallengeRenderProps } from "@/components/agentproof/NaturalChallengeShell";
+import { clientSampleTimeMs } from "@/lib/challenge/clientClock";
 import type { InteractionSample } from "@/lib/challenge/core/types";
+import type { ObjectPose } from "@/lib/challenge/types";
 
 type GateLayout = {
   id: string;
@@ -18,9 +20,10 @@ export function DynamicPathChallenge({
   challenge,
   poses,
   interactive,
-  elapsedMs,
+  serverStartedAtMs,
   onSamples,
   accessibleMode,
+  onGoalReached,
 }: NaturalChallengeRenderProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const layout = challenge.scene.layout as {
@@ -32,23 +35,45 @@ export function DynamicPathChallenge({
   const dragging = useRef(false);
   const samples = useRef<InteractionSample[]>([]);
   const count = useRef(0);
-  const clockRef = useRef({ baseElapsed: 0, basePerf: 0 });
   const ballRef = useRef(ball);
-  useEffect(() => {
-    clockRef.current = { baseElapsed: elapsedMs, basePerf: performance.now() };
-  }, [elapsedMs]);
+  const posesRef = useRef<ObjectPose[]>(poses);
+  const goalFired = useRef(false);
+
   useEffect(() => {
     ballRef.current = ball;
   }, [ball]);
+
+  useEffect(() => {
+    posesRef.current = poses;
+  }, [poses]);
+
+  const sampleTime = () => clientSampleTimeMs(serverStartedAtMs);
+
+  const checkGoal = (x: number) => {
+    if (goalFired.current || !onGoalReached) return;
+    if (x >= layout.goalX - 20) {
+      goalFired.current = true;
+      onGoalReached();
+    }
+  };
+
   const push = (x: number, y: number, kind: InteractionSample["kind"]) => {
-    samples.current.push({ t: (() => { const c = clockRef.current; return Math.max(0, c.baseElapsed + (performance.now() - c.basePerf)); })(), x, y, objectId: "ball", kind });
+    samples.current.push({
+      t: sampleTime(),
+      x,
+      y,
+      objectId: "ball",
+      kind,
+    });
     if (samples.current.length > 800) {
       samples.current = samples.current.slice(-600);
     }
     count.current += 1;
     onSamples([...samples.current], count.current);
+    checkGoal(x);
   };
 
+  // Stable RAF: poses come from posesRef so gate motion never tears down the loop.
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas || accessibleMode) return;
@@ -57,6 +82,7 @@ export function DynamicPathChallenge({
     const { width, height } = challenge.scene;
     let raf = 0;
     const loop = () => {
+      const livePoses = posesRef.current;
       ctx.clearRect(0, 0, width, height);
       ctx.fillStyle = "#0b1220";
       ctx.fillRect(0, 0, width, height);
@@ -70,7 +96,7 @@ export function DynamicPathChallenge({
       ctx.setLineDash([]);
 
       for (const gate of layout.gates) {
-        const opening = poses.find((p) => p.id === `${gate.id}_opening`);
+        const opening = livePoses.find((p) => p.id === `${gate.id}_opening`);
         const center = opening?.y ?? height / 2;
         const half = gate.openingHeight / 2;
         ctx.fillStyle = "#64748b";
@@ -105,7 +131,7 @@ export function DynamicPathChallenge({
     };
     raf = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(raf);
-  }, [accessibleMode, challenge.scene, layout, poses]);
+  }, [accessibleMode, challenge.scene, layout]);
 
   const toLocal = (clientX: number, clientY: number) => {
     const canvas = canvasRef.current!;

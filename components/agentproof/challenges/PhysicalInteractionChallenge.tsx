@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { NaturalChallengeRenderProps } from "@/components/agentproof/NaturalChallengeShell";
+import { clientSampleTimeMs } from "@/lib/challenge/clientClock";
 import type { InteractionSample } from "@/lib/challenge/core/types";
 
 type BodyLayout = {
@@ -19,9 +20,10 @@ const STEP = 24;
 export function PhysicalInteractionChallenge({
   challenge,
   interactive,
-  elapsedMs,
+  serverStartedAtMs,
   onSamples,
   accessibleMode,
+  onGoalReached,
 }: NaturalChallengeRenderProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const layout = challenge.scene.layout as {
@@ -46,21 +48,43 @@ export function PhysicalInteractionChallenge({
   const dragging = useRef(false);
   const samples = useRef<InteractionSample[]>([]);
   const count = useRef(0);
-  const clockRef = useRef({ baseElapsed: 0, basePerf: 0 });
   const agentRef = useRef(agent);
-  useEffect(() => {
-    clockRef.current = { baseElapsed: elapsedMs, basePerf: performance.now() };
-  }, [elapsedMs]);
+  const goalFired = useRef(false);
+
   useEffect(() => {
     agentRef.current = agent;
   }, [agent]);
+
+  const sampleTime = () => clientSampleTimeMs(serverStartedAtMs);
+
+  const checkGoal = (ax: number, ay: number) => {
+    if (goalFired.current || !onGoalReached) return;
+    const plat = layout.platform;
+    if (
+      ax >= plat.x &&
+      ax <= plat.x + plat.width &&
+      ay >= plat.y &&
+      ay <= plat.y + plat.height
+    ) {
+      goalFired.current = true;
+      onGoalReached();
+    }
+  };
+
   const push = (x: number, y: number, kind: InteractionSample["kind"]) => {
-    samples.current.push({ t: (() => { const c = clockRef.current; return Math.max(0, c.baseElapsed + (performance.now() - c.basePerf)); })(), x, y, objectId: "agent", kind });
+    samples.current.push({
+      t: sampleTime(),
+      x,
+      y,
+      objectId: "agent",
+      kind,
+    });
     if (samples.current.length > 800) {
       samples.current = samples.current.slice(-600);
     }
     count.current += 1;
     onSamples([...samples.current], count.current);
+    checkGoal(x, y);
   };
 
   const resolvePush = (nx: number, ny: number) => {

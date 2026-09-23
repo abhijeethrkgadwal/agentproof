@@ -1,12 +1,16 @@
 import type { InteractionPayload, AnswerValidation } from "@/lib/challenge/core/types";
 import {
+  normalizeTrajectorySamples,
+  trajectoryWithinSpeed,
+} from "@/lib/challenge/core/trajectory";
+import {
   circlesOverlap,
   pointInCircle,
   segmentPositionAt,
 } from "@/lib/challenge/motion";
 import type {
-  DragAvoidRenderConfiguration,
   DragAvoidGroundTruth,
+  DragAvoidRenderConfiguration,
   FrameResponse,
   ObjectPose,
   PublicChallengeResponse,
@@ -70,7 +74,6 @@ export function toDragAvoidPublic(
         agentStart: c.agent.start,
         target: c.target.position,
         obstacleCount: c.obstacles.length,
-        // No obstacle starts / segments
       },
     },
     accessibilityHint:
@@ -147,8 +150,6 @@ export function validateDragAvoid(
   const c = cfg(challenge);
   const truth = gt(challenge);
 
-  // Accessible mode uses the same trajectory samples (discrete nudges).
-  // Reject legacy secret-path answers — they are not human-solvable.
   if (
     input.interaction?.accessibleAnswers &&
     (!input.interaction.samples || input.interaction.samples.length < 3)
@@ -156,37 +157,25 @@ export function validateDragAvoid(
     return { correct: false, reason: "invalid_accessible_answer" };
   }
 
-  const samples = input.interaction?.samples ?? [];
-  if (samples.length < 3) {
-    return { correct: false, reason: "invalid_trajectory" };
-  }
-
-  const agentSamples = samples.filter(
+  const rawSamples = input.interaction?.samples ?? [];
+  const filtered = rawSamples.filter(
     (s) => !s.objectId || s.objectId === truth.agentId,
   );
+  const agentSamples = normalizeTrajectorySamples(filtered);
   if (agentSamples.length < 3) {
-    return { correct: false, reason: "incorrect_object" };
+    return { correct: false, reason: "invalid_trajectory" };
   }
 
   const first = agentSamples[0]!;
   const dx0 = first.x - c.agent.start.x;
   const dy0 = first.y - c.agent.start.y;
-  if (dx0 * dx0 + dy0 * dy0 > (c.agent.size * 2.5) ** 2) {
+  if (dx0 * dx0 + dy0 * dy0 > (c.agent.size * 3.5) ** 2) {
     return { correct: false, reason: "invalid_start" };
   }
 
-  // Continuity / speed
-  for (let i = 1; i < agentSamples.length; i += 1) {
-    const a = agentSamples[i - 1]!;
-    const b = agentSamples[i]!;
-    if (b.t < a.t) {
-      return { correct: false, reason: "invalid_trajectory" };
-    }
-    const dt = Math.max(1, b.t - a.t) / 1000;
-    const dist = Math.hypot(b.x - a.x, b.y - a.y);
-    if (dist / dt > truth.maxSpeedPxPerSec * 1.35) {
-      return { correct: false, reason: "invalid_trajectory" };
-    }
+  // Human-tolerant speed (asymmetric paths + pointer jitter / flicks)
+  if (!trajectoryWithinSpeed(agentSamples, Math.max(1600, truth.maxSpeedPxPerSec * 4))) {
+    return { correct: false, reason: "invalid_trajectory" };
   }
 
   const obstacleAt = (o: (typeof c.obstacles)[number], t: number) => {
@@ -215,7 +204,6 @@ export function validateDragAvoid(
     return false;
   };
 
-  // Collisions at sample times
   for (const sample of agentSamples) {
     const t = Math.max(0, Math.min(sample.t, c.durationMs));
     if (collides(sample.x, sample.y, t)) {
@@ -223,22 +211,23 @@ export function validateDragAvoid(
     }
   }
 
-  // Hold final pose through remaining window (idle collision check)
   const last = agentSamples[agentSamples.length - 1]!;
-  for (let t = last.t; t <= c.durationMs; t += 100) {
+  const onTarget = pointInCircle(
+    { x: last.x, y: last.y },
+    c.target.position,
+    truth.targetRadius + c.agent.size * 0.5,
+  );
+  if (!onTarget) {
+    return { correct: false, reason: "missed_target" };
+  }
+
+  // Only hold-check a short grace window — early finish should not fail
+  // because an obstacle later sweeps the parked agent.
+  const holdEnd = Math.min(c.durationMs, last.t + 400);
+  for (let t = last.t; t <= holdEnd; t += 100) {
     if (collides(last.x, last.y, t)) {
       return { correct: false, reason: "collision" };
     }
-  }
-
-  if (
-    !pointInCircle(
-      { x: last.x, y: last.y },
-      c.target.position,
-      truth.targetRadius + c.agent.size * 0.35,
-    )
-  ) {
-    return { correct: false, reason: "missed_target" };
   }
 
   return { correct: true };
@@ -250,7 +239,6 @@ export function dragAvoidLeaksHiddenState(payload: unknown): boolean {
   if (text.includes("accessibleSafePath")) return true;
   if (text.includes("groundTruth")) return true;
   if (text.includes('"velocity"')) return true;
-  // Obstacle starts must not appear in public issue payload
   if (text.includes('"obstacles"') && text.includes('"start"')) return true;
   return false;
 }

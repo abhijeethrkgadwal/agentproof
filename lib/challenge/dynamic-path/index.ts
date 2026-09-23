@@ -1,4 +1,8 @@
 import type { InteractionPayload, AnswerValidation } from "@/lib/challenge/core/types";
+import {
+  normalizeTrajectorySamples,
+  trajectoryWithinSpeed,
+} from "@/lib/challenge/core/trajectory";
 import { segmentPositionAt } from "@/lib/challenge/motion";
 import type {
   DynamicPathGroundTruth,
@@ -154,34 +158,28 @@ export function validateDynamicPath(
     return { correct: false, reason: "invalid_accessible_answer" };
   }
 
-  const samples = (input.interaction?.samples ?? []).filter(
-    (s) => !s.objectId || s.objectId === truth.ballId,
+  const samples = normalizeTrajectorySamples(
+    (input.interaction?.samples ?? []).filter(
+      (s) => !s.objectId || s.objectId === truth.ballId,
+    ),
   );
   if (samples.length < 3) {
     return { correct: false, reason: "invalid_trajectory" };
   }
 
   const first = samples[0]!;
-  if (Math.hypot(first.x - c.ball.start.x, first.y - c.ball.start.y) > 50) {
+  if (Math.hypot(first.x - c.ball.start.x, first.y - c.ball.start.y) > 70) {
     return { correct: false, reason: "invalid_start" };
   }
 
-  for (let i = 1; i < samples.length; i += 1) {
-    const a = samples[i - 1]!;
-    const b = samples[i]!;
-    if (b.t < a.t) {
-      return { correct: false, reason: "invalid_trajectory" };
-    }
-    const dt = Math.max(1, b.t - a.t) / 1000;
-    if (Math.hypot(b.x - a.x, b.y - a.y) / dt > truth.maxSpeedPxPerSec * 1.35) {
-      return { correct: false, reason: "invalid_trajectory" };
-    }
+  if (!trajectoryWithinSpeed(samples, Math.max(1600, truth.maxSpeedPxPerSec * 4))) {
+    return { correct: false, reason: "invalid_trajectory" };
   }
 
   // Must cross each gate through the opening (closest sample to gate x)
   for (const gate of c.gates) {
     const band = samples.filter(
-      (s) => Math.abs(s.x - gate.x) <= gate.gateThickness + c.ball.size + 4,
+      (s) => Math.abs(s.x - gate.x) <= gate.gateThickness + c.ball.size + 8,
     );
     if (band.length === 0) {
       return { correct: false, reason: "incomplete_path" };
@@ -190,14 +188,14 @@ export function validateDynamicPath(
       Math.abs(s.x - gate.x) < Math.abs(best.x - gate.x) ? s : best,
     );
     const center = gateOpeningCenter(challenge, gate.id, crossing.t);
-    const half = gate.openingHeight / 2 - c.ball.size * 0.6;
+    const half = gate.openingHeight / 2 - c.ball.size * 0.35;
     if (Math.abs(crossing.y - center) > half) {
       return { correct: false, reason: "gate_collision" };
     }
   }
 
   const last = samples[samples.length - 1]!;
-  if (last.x < truth.goalX - 30) {
+  if (last.x < truth.goalX - 40) {
     return { correct: false, reason: "incomplete_path" };
   }
 
