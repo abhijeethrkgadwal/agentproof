@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { BrandLogo } from "@/components/brand/BrandLogo";
+import { SiteFooter } from "@/components/brand/SiteChrome";
 import { NaturalChallengeShell } from "@/components/agentproof/NaturalChallengeShell";
 import { PhysicalInteractionChallenge } from "@/components/agentproof/challenges/PhysicalInteractionChallenge";
 
@@ -39,6 +40,7 @@ export default function PhysicalDemoPage() {
           renderScene={(props) => <PhysicalInteractionChallenge {...props} />}
         />
       </div>
+      <SiteFooter />
     </main>
   );
 }

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { BrandLogo } from "@/components/brand/BrandLogo";
+import { SiteFooter } from "@/components/brand/SiteChrome";
 import { Challenge } from "@/components/agentproof/Challenge";
 import { SITE } from "@/lib/site";
 
@@ -44,6 +45,7 @@ export default function TemporalDemoPage() {
           </a>
         </p>
       </div>
+      <SiteFooter />
     </main>
   );
 }

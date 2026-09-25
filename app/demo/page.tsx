@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { BrandLogo } from "@/components/brand/BrandLogo";
+import { SiteFooter } from "@/components/brand/SiteChrome";
 import { SITE } from "@/lib/site";
 
 const CHALLENGES = [
@@ -128,6 +129,7 @@ export default function DemoHubPage() {
           </a>
         </div>
       </div>
+      <SiteFooter />
     </main>
   );
 }

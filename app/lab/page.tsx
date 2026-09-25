@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { BrandLogo } from "@/components/brand/BrandLogo";
+import { SiteFooter } from "@/components/brand/SiteChrome";
 import type { AttackRunRecord, BenchmarkRow, LabRunRecord } from "@/lib/lab/types";
 import type { StudyAggregate } from "@/lib/study/types";
 
@@ -339,6 +340,7 @@ export default function LabPage() {
           </ul>
         </section>
       </div>
+      <SiteFooter />
     </main>
   );
 }

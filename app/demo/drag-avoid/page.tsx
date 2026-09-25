@@ -1,6 +1,7 @@
 "use client";
 
 import { BrandLogo } from "@/components/brand/BrandLogo";
+import { SiteFooter } from "@/components/brand/SiteChrome";
 import { NaturalChallengeShell } from "@/components/agentproof/NaturalChallengeShell";
 import { DragAvoidChallenge } from "@/components/agentproof/challenges/DragAvoidChallenge";
 import { useState } from "react";
@@ -23,6 +24,7 @@ export default function DragAvoidDemoPage() {
           renderScene={(props) => <DragAvoidChallenge {...props} />}
         />
       </div>
+      <SiteFooter />
     </main>
   );
 }

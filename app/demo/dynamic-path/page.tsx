@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { BrandLogo } from "@/components/brand/BrandLogo";
+import { SiteFooter } from "@/components/brand/SiteChrome";
 import { NaturalChallengeShell } from "@/components/agentproof/NaturalChallengeShell";
 import { DynamicPathChallenge } from "@/components/agentproof/challenges/DynamicPathChallenge";
 
@@ -39,6 +40,7 @@ export default function DynamicPathDemoPage() {
           renderScene={(props) => <DynamicPathChallenge {...props} />}
         />
       </div>
+      <SiteFooter />
     </main>
   );
 }
