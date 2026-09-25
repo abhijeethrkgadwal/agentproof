@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { BrandLogo } from "@/components/brand/BrandLogo";
+import { SiteFooter } from "@/components/brand/SiteChrome";
 import {
   VerificationResult,
   type VerificationPayload,
@@ -360,6 +361,7 @@ export default function AccessibleDemoPage() {
           </p>
         </aside>
       </div>
+      <SiteFooter />
     </main>
   );
 }

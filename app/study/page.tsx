@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { BrandLogo } from "@/components/brand/BrandLogo";
+import { SiteFooter } from "@/components/brand/SiteChrome";
 import type {
   FrameResponse,
   ObjectPose,
@@ -482,6 +483,7 @@ export default function StudyPage() {
           </section>
         ) : null}
       </div>
+      <SiteFooter />
     </main>
   );
 }

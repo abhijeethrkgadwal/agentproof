@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { BrandLogo } from "@/components/brand/BrandLogo";
+import { SiteFooter } from "@/components/brand/SiteChrome";
 import {
   ALL_CHALLENGE_TYPES,
   CHALLENGE_META,
@@ -236,6 +237,7 @@ export default function ChallengeLabPage() {
           })}
         </div>
       </div>
+      <SiteFooter />
     </main>
   );
 }
