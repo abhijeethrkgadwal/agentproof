@@ -1,18 +1,39 @@
 # AgentProof case study
 
-**Label:** Research/portfolio prototype — not production security infrastructure.
+**Label:** Research Prototype - not production security infrastructure.  
+**Repo:** [github.com/abhijeethrkgadwal/agentproof](https://github.com/abhijeethrkgadwal/agentproof)  
+**Credit:** Abhijeeth Gadwal - Product & Architecture
+
+## Vision
+
+Automated agents increasingly attack or bypass the gates in front of core services - logins, APIs, and other high-value endpoints. The wrong response is to claim “prove you are human” or “AI-proof CAPTCHA.”
+
+AgentProof’s research question:
+
+> Can we make automated access **more expensive**, **less reliable**, and **more detectable**, while keeping legitimate interaction usable - and leave room for **human supervision** before sensitive actions?
+
+`riskScore` is an explainable **interaction risk signal** (`allow` / `step_up` / `restrict`). It is not a probability that the user is human.
 
 ## Problem
 
-Agentic clients can solve static or fully client-described challenges offline. Traditional CAPTCHAs leak enough structure for scripts; “prove you are human” claims do not hold against modern automation.
-
-## Market context
-
-Bot defense and agentic browsing are converging. Buyers want measurable friction against automated abuse without pretending vision models do not exist. Portfolio research can explore adaptive, server-authored challenges with honest metrics.
+- Static or fully client-described challenges can be solved offline.
+- Traditional CAPTCHAs leak structure that scripts exploit.
+- Agentic browsing raises the stakes for endpoints that still need accountability.
 
 ## Hypothesis
 
-If ground truth and motion plans stay server-side, frames are display-distorted, and verify decisions use explainable interaction features, then automated solvers become less reliable and more expensive — without claiming AI-proof security.
+If ground truth stays server-side, frames are display-distorted, sessions are bound and short-lived, and verify uses explainable interaction features (challenge-aware), then automated solvers become less reliable and more expensive - without claiming AI-proof security.
+
+## What shipped (portfolio slice)
+
+| Phase | Outcome |
+|-------|---------|
+| 1-3 | Temporal prototype → break it offline → redesign protocol (no motion plans in payload) |
+| 4-5 | Agent Lab + light harden + regression gates |
+| 6-7 | Study pilot UX, Lab V2 attacks, Redis-ready stores, adaptive rules, SDK path |
+| 8 | Validation, honest limitations, public research framing |
+| 9 | Natural challenges: drag-avoid, physical, dynamic-path |
+| 10 | Challenge-aware risk rules so pointer-heavy solves are not over-punished |
 
 ## Architecture
 
@@ -20,48 +41,24 @@ Server issues signed challenges and sessions; clients poll progressive `/frame` 
 
 ## Threat model
 
-Network observers, offline derivation, replay/tamper, polling reconstruction, timing attacks, API key abuse. Full notes in [`threat-model.md`](./threat-model.md) and [`security.md`](./security.md).
+Network observers, offline derivation, replay/tamper, polling reconstruction, timing attacks, API key abuse. Notes in [`threat-model.md`](./threat-model.md) and [`security.md`](./security.md).
 
-## Phase 2 attack
+## Benchmarks & honesty
 
-Public payloads included motion segments. Attackers reconstructed answers offline. Attack matrix documented under media `phase-2-attack-matrix.json`.
-
-## Phase 3 redesign
-
-Removed client motion plans; progressive server frames; signed sessions; premature verify blocked. Retest artifact: `phase-3-attack-retest.json`.
-
-## Phase 4 Agent Lab
-
-L1/L2 runners and Automation Cost metric. Lab dashboard separates measurement from hard security gates.
-
-## Phase 5 hardening (Decision C)
-
-Display harden + risk engine; no Jev/ML. Focus on raising reconstruction cost.
-
-## Phase 6 / 7 productisation
-
-Human study UX, Lab V2 attacks A–F, regression gates, Redis abstractions, signed sessions, adaptive rules, developer keys + SDK. Phase 7 suppressed polling-optimisation residual via lag / path contamination / GT-biased warp.
-
-## Benchmarks
-
-Phase 8 final matrix (`phase-8-final-benchmark.json`) re-runs live checks and Lab V2, and references historical artifacts. Automated results are **lab measurements** — not proof of human-only access.
-
-## Human pilot
-
-Observational pilot at `/study` (difficulties 1–2, anonymous IDs). Target 30–50; report honest N. See [`human-study.md`](./human-study.md) and recruitment script `scripts/study/recruitment.mjs`.
-
-## Limitations
-
-See [`limitations.md`](./limitations.md). Prototype is not production security infrastructure.
+Lab Automation Cost and attack matrices are **measurements**, not proof of human-only access. Human study remains an observational pilot with honest N. See [`limitations.md`](./limitations.md) and [`human-study.md`](./human-study.md).
 
 ## Lessons learned
 
 1. Shipping motion plans to the client fails immediately against offline solvers.
-2. Display≠GT is necessary but insufficient; adaptive low-pass can undo high-frequency noise — Phase 7 needed structured bias.
+2. Display≠GT raises cost but adaptive attackers can still partially undo noise - structured bias helped.
 3. Separate hard security gates from measurement attacks in CI.
 4. Honest human N beats fabricated study claims.
-5. Redis TTL APIs must match the client library (ioredis EX args).
+5. Risk rules tuned for click challenges over-punish natural pointer streams - make them challenge-aware.
 
-## Roadmap
+## Open source
 
-Phases 1–8 delivered for this portfolio slice. Future work (not started here): broader pilots, independent a11y audit, hardened key management, optional protocol evolution — **no Phase 9 in this session**.
+MIT-licensed for experimentation. Fork the demos, attack them in Agent Lab, and propose better challenges or risk rules - while keeping research-honest claims.
+
+## Roadmap (not promises)
+
+Broader human pilots, independent accessibility audit, hardened key management, richer Lab attackers for natural challenges - only if pursued deliberately. Optional ML/Jev for risk adaptation remains out of scope unless explicitly greenlit.

@@ -25,7 +25,7 @@ export type NaturalChallengeRenderProps = {
   serverStartedAtMs: number;
   onSamples: (samples: InteractionSample[], interactionCount: number) => void;
   accessibleMode: boolean;
-  /** Client hint: agent reached goal — enables early verify. */
+  /** Client hint: agent reached goal - enables early verify. */
   onGoalReached?: () => void;
 };
 
@@ -292,9 +292,9 @@ export function NaturalChallengeShell({
       if (!response.ok) {
         const err =
           data.error === "premature_submit"
-            ? "Too early — finish the goal or wait a bit longer."
+            ? "Too early - finish the goal or wait a bit longer."
             : data.error === "rate_limited"
-              ? "Too many requests — wait a second and verify again."
+              ? "Too many requests - wait a second and verify again."
               : (data.error ?? `HTTP ${response.status}`);
         setVerifyStatus("error");
         setResult({
@@ -347,10 +347,11 @@ export function NaturalChallengeShell({
           <button
             type="button"
             onClick={() => setAccessibleMode((v) => !v)}
-            className="rounded border border-slate-700 px-3 py-1.5 text-sm text-slate-300 hover:border-slate-500 hover:text-white"
+            className="min-h-10 rounded border border-slate-700 px-3 py-2 text-sm text-slate-300 hover:border-slate-500 hover:text-white"
             data-testid="toggle-accessible"
+            aria-pressed={accessibleMode}
           >
-            {accessibleMode ? "Pointer mode" : "Accessible mode"}
+            {accessibleMode ? "Use pointer / drag" : "Use keyboard controls"}
           </button>
           <Link
             href="/demo"
@@ -400,7 +401,7 @@ export function NaturalChallengeShell({
             <div className="flex flex-col items-start gap-4 rounded-md border border-slate-800 bg-slate-950/50 p-6">
               <p className="text-slate-300">
                 Challenge issued. Obstacle / gate motion is revealed only after
-                you start — future trajectories stay on the server.
+                you start - future trajectories stay on the server.
               </p>
               {challenge.accessibilityHint ? (
                 <p className="text-xs text-slate-500">{challenge.accessibilityHint}</p>
@@ -425,8 +426,8 @@ export function NaturalChallengeShell({
                 <span>
                   {goalReached
                     ? elapsedMs >= minActiveMs
-                      ? "Goal reached — ready to verify"
-                      : "Goal reached — unlocks verify shortly"
+                      ? "Goal reached - ready to verify"
+                      : "Goal reached - unlocks verify shortly"
                     : complete
                       ? "Window complete"
                       : canVerify
@@ -473,7 +474,7 @@ export function NaturalChallengeShell({
                 </span>
               </div>
               <p className="text-xs text-slate-500">
-                This is a pilot accessibility implementation and is not
+                Keyboard controls are a pilot aid for this demo and are not
                 WCAG-certified. Finish the goal to verify early, or wait for the
                 timer.
               </p>

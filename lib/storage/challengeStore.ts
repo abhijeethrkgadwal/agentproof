@@ -1,5 +1,5 @@
 /**
- * Challenge store — memory (local/tests) or Redis (multi-process).
+ * Challenge store - memory (local/tests) or Redis (multi-process).
  * Methods may be sync or async; callers always await.
  */
 import type { StoredChallenge } from "@/lib/challenge/types";
@@ -111,7 +111,7 @@ export function setChallengeStoreForTests(store: ChallengeStore | null): void {
 
 /**
  * Initialize storage backends from env. Safe to call on boot.
- * Redis is optional — falls back to memory if unavailable.
+ * Redis is optional - falls back to memory if unavailable.
  */
 export async function initStorageBackends(): Promise<{
   backend: "memory" | "redis";

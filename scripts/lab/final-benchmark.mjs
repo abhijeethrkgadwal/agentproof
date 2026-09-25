@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Phase 8 final Lab benchmark — historical attack matrix + Lab V2 + Automation Cost.
+ * Phase 8 final Lab benchmark - historical attack matrix + Lab V2 + Automation Cost.
  * Separates human study aggregates from automated attacks.
  * Does NOT claim "AI-proof."
  *
@@ -126,7 +126,7 @@ async function main() {
       phase: 4,
       attack: "lab_l1_frame_reconstruction",
       category: "automated_measurement",
-      note: "Measured via lab:l1 / gates — success may be non-zero; not a security claim",
+      note: "Measured via lab:l1 / gates - success may be non-zero; not a security claim",
     },
     {
       phase: 5,
@@ -160,7 +160,7 @@ async function main() {
 
   const report = {
     phase: 8,
-    label: "research/portfolio prototype — not production security infrastructure",
+    label: "research prototype - not production security infrastructure",
     disclaimer:
       "AgentProof does not claim to be AI-proof. Automated success rates are lab measurements under controlled conditions.",
     startedAt,

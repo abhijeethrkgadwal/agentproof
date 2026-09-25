@@ -3,7 +3,7 @@
  * Phase 2 attack matrix runner against a live AgentProof instance.
  * Usage: node scripts/attacks/run-attack-matrix.mjs [baseUrl]
  *
- * Does NOT implement mitigations — measurement only.
+ * Does NOT implement mitigations - measurement only.
  */
 
 import { writeFileSync, mkdirSync } from "node:fs";
@@ -78,7 +78,7 @@ async function main() {
       "Network observer (DevTools, proxy, automation) obtains everything needed to solve offline.",
     proposedMitigation:
       "Do not ship raw velocity segments; send opaque animation assets or server-streamed frames; or encrypt/server-side only positions.",
-    retest: "N/A — measurement run",
+    retest: "N/A - measurement run",
   });
 
   // --- 2. Extract motion/config data ---
@@ -89,7 +89,7 @@ async function main() {
   }));
   record("2. Extract motion/config data", {
     pass: extracted.length >= 6,
-    why: "renderConfiguration.objects[].segments is fully readable JSON — no canvas scrape required.",
+    why: "renderConfiguration.objects[].segments is fully readable JSON - no canvas scrape required.",
     evidence: { extractedSample: extracted.slice(0, 3), total: extracted.length },
     impact: "Zero visual perception cost to obtain motion plan.",
     proposedMitigation:
@@ -121,7 +121,7 @@ async function main() {
   // We still document that React props hold the same renderConfiguration.
   record("4. Inspect DOM/canvas/runtime state", {
     pass: true,
-    why: "Canvas pixels are not required — the same motion plan is already in the XHR/fetch response and in client memory. Canvas is not a security boundary.",
+    why: "Canvas pixels are not required - the same motion plan is already in the XHR/fetch response and in client memory. Canvas is not a security boundary.",
     evidence: {
       note: "Confirmed via API; Playwright e2e also intercepts /api/challenge. No DOM attribute reveals correctObjectId directly.",
       canvasIsSecurityBoundary: false,
@@ -182,7 +182,7 @@ async function main() {
     impact:
       "Attackers cannot replay a used token or forge signatures without the signing secret. Does not stop offline answer derivation.",
     proposedMitigation: "Keep as-is; these controls are working.",
-    retest: "N/A — attack failed (controls held)",
+    retest: "N/A - attack failed (controls held)",
   });
 
   // --- 6. Manipulate timing ---
@@ -252,7 +252,7 @@ async function main() {
   const elapsedMs = Date.now() - t0;
   record("7. Call /api/verify directly", {
     pass: directVerify.json.verified === true,
-    why: "No browser, canvas, pointer, or human observation required — curl/fetch + derive-answer is sufficient.",
+    why: "No browser, canvas, pointer, or human observation required - curl/fetch + derive-answer is sufficient.",
     evidence: {
       verified: directVerify.json.verified,
       decision: directVerify.json.decision,
@@ -270,7 +270,7 @@ async function main() {
   // --- 8. Automate with Playwright (invoked separately; record expectation) ---
   record("8. Automate the challenge with Playwright", {
     pass: true,
-    why: "Playwright intercepts /api/challenge, derives answer via same segment math, clicks canvas or posts verify — same as Phase 1 e2e successful interaction test, which already proves automation works.",
+    why: "Playwright intercepts /api/challenge, derives answer via same segment math, clicks canvas or posts verify - same as Phase 1 e2e successful interaction test, which already proves automation works.",
     evidence: {
       harness: "tests/redteam/playwright-offline-solve.spec.ts",
       priorEvidence: "tests/e2e/agentproof.spec.ts normal successful interaction",

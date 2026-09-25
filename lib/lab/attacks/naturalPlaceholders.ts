@@ -2,7 +2,7 @@ import { computeAutomationCost, type AttackRunRecord } from "@/lib/lab/types";
 
 /**
  * Placeholder attacker stubs for v0.2 natural challenges.
- * Do NOT fabricate success rates — these always record as not-implemented.
+ * Do NOT fabricate success rates - these always record as not-implemented.
  */
 export async function runNaturalChallengePlaceholder(options: {
   challengeType: "drag_avoid" | "physical" | "dynamic_path";
@@ -33,6 +33,6 @@ export async function runNaturalChallengePlaceholder(options: {
       apiRequestCount: 0,
       interactionCount: 0,
     }),
-    notes: `Placeholder only — no automated attacker for ${options.challengeType} yet. No fake benchmark data.`,
+    notes: `Placeholder only - no automated attacker for ${options.challengeType} yet. No fake benchmark data.`,
   };
 }

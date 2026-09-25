@@ -1,5 +1,5 @@
 /**
- * Level 3 — Vision agent interface stub.
+ * Level 3 - Vision agent interface stub.
  * No model is integrated in Phase 4. This defines the contract for a future
  * multimodal agent that would consume canvas frames / screenshots.
  */
@@ -9,7 +9,7 @@ export type VisionFrame = {
   capturedAt: string;
   /** Elapsed ms since challenge start (client estimate). */
   elapsedMs: number;
-  /** PNG/JPEG bytes or data-URL — opaque to the lab until a model is wired. */
+  /** PNG/JPEG bytes or data-URL - opaque to the lab until a model is wired. */
   imageBase64?: string;
   /** Optional width/height metadata. */
   width?: number;
@@ -36,7 +36,7 @@ export interface VisionAgent {
   analyze(context: VisionAgentContext): Promise<VisionAgentDecision>;
 }
 
-/** Placeholder agent — always refuses until a real model is plugged in. */
+/** Placeholder agent - always refuses until a real model is plugged in. */
 export class StubVisionAgent implements VisionAgent {
   readonly id = "vision-stub-v0";
   readonly status = "stub" as const;
@@ -47,7 +47,7 @@ export class StubVisionAgent implements VisionAgent {
       selectedObjectId: null,
       confidence: 0,
       rationale:
-        "Phase 4 stub only — no multimodal model integrated. Wire a vision/agent model here in a later phase.",
+        "Phase 4 stub only - no multimodal model integrated. Wire a vision/agent model here in a later phase.",
       modelId: this.id,
     };
   }

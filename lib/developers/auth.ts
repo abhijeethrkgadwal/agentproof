@@ -1,7 +1,7 @@
 /**
  * Optional API-key gate for challenge issuance.
  * - Missing key: allowed in `test` (demo/lab); rejected in `live`.
- * - Present but invalid/revoked: always rejected (P0 — no silent ignore).
+ * - Present but invalid/revoked: always rejected (P0 - no silent ignore).
  */
 import { verifyApiKey } from "@/lib/developers/keys";
 

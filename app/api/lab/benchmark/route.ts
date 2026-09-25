@@ -19,10 +19,10 @@ export async function GET() {
     {
       formula: AUTOMATION_COST_FORMULA,
       disclaimer:
-        "Automation Cost is a normalized experimental metric — not a universal security score.",
+        "Automation Cost is a normalized experimental metric - not a universal security score.",
       humanObservations: {
         source: "study",
-        label: "Observational pilot — not a scientific human-performance study.",
+        label: "Observational pilot - not a scientific human-performance study.",
         aggregate: aggregateStudyAttempts(listStudyAttemptsInternal()),
         // Synthetic lab "human" rows are excluded from this block on purpose.
         syntheticPlaceholderBenchmarks: benchmarkByLevel(["human"]),

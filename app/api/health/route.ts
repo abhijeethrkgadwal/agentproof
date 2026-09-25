@@ -9,7 +9,7 @@ export async function GET() {
   return jsonOk({
     status: "ok",
     service: "agentproof",
-    label: "research/portfolio prototype — not production security infrastructure",
+    label: "research prototype - not production security infrastructure",
     storage: {
       configured: backend,
       redisUrlConfigured: Boolean(getRedisUrl()),

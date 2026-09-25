@@ -55,7 +55,7 @@ export function getDifficultyProfile(level: number): DifficultyProfile {
   return PROFILES[clamped]!;
 }
 
-/** UI enables only difficulty 1–2 in Phase 1. */
+/** UI enables only difficulty 1-2 in Phase 1. */
 export function isUiEnabledDifficulty(level: number): boolean {
   return level === 1 || level === 2;
 }

@@ -252,10 +252,10 @@ export function Challenge({
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="text-xs uppercase tracking-[0.2em] text-cyan-400/80">
-            AgentProof Verification
+            Temporal research challenge
           </p>
           <h2 className="mt-1 text-2xl font-semibold text-slate-50">
-            Observe the scene.
+            Watch, then select
           </h2>
           <p
             className="mt-2 max-w-xl text-slate-300"
@@ -267,14 +267,14 @@ export function Challenge({
         <div className="flex flex-wrap gap-2">
           <Link
             href="/demo/accessible"
-            className="rounded border border-slate-700 px-3 py-1.5 text-sm text-slate-300 hover:border-slate-500 hover:text-white"
+            className="min-h-10 rounded border border-slate-700 px-3 py-2 text-sm text-slate-300 hover:border-slate-500 hover:text-white"
           >
-            Accessible mode
+            Keyboard / list
           </Link>
           <button
             type="button"
             onClick={() => void loadChallenge()}
-            className="rounded border border-slate-700 px-3 py-1.5 text-sm text-slate-300 hover:border-slate-500 hover:text-white"
+            className="min-h-10 rounded border border-slate-700 px-3 py-2 text-sm text-slate-300 hover:border-slate-500 hover:text-white"
             data-testid="reload-challenge"
           >
             New challenge
@@ -310,22 +310,25 @@ export function Challenge({
       {challenge && (loadState === "issued" || loadState === "active") ? (
         <>
           {loadState === "issued" ? (
-            <div className="flex flex-col items-start gap-4 rounded-md border border-slate-800 bg-slate-950/50 p-6">
+            <div className="flex flex-col items-start gap-4 rounded-lg border border-slate-800 bg-slate-950/50 p-5 sm:p-6">
               <p className="text-slate-300">
-                Challenge issued. Motion is not available until you start — the
-                server reveals poses over the active window.
+                Challenge ready. Press start to watch the objects move - the
+                answer stays on the server until you verify.
               </p>
-              <p className="font-mono text-xs text-slate-500">
-                lifecycle: {challenge.lifecycle} · objects:{" "}
-                {challenge.scene.objects.length}
+              <p className="text-xs text-slate-500">
+                Prefer a keyboard list instead of this canvas?{" "}
+                <Link href="/demo/accessible" className="text-cyan-400 hover:underline">
+                  Open accessible mode
+                </Link>
+                .
               </p>
               <button
                 type="button"
                 data-testid="start-challenge"
                 onClick={() => void startChallenge()}
-                className="rounded bg-cyan-500 px-4 py-2 text-sm font-semibold text-slate-950 hover:bg-cyan-400"
+                className="min-h-11 rounded bg-cyan-500 px-4 py-2 text-sm font-semibold text-slate-950 hover:bg-cyan-400"
               >
-                Start challenge
+                Start watching
               </button>
             </div>
           ) : null}

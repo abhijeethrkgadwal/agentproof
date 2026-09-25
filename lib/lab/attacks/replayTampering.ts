@@ -2,7 +2,7 @@ import { labPost, sleep, type HttpJar } from "@/lib/lab/attacks/http";
 import { computeAutomationCost, type AttackRunRecord } from "@/lib/lab/types";
 
 /**
- * F. Replay / Tampering — confirm replay and signature tamper remain blocked.
+ * F. Replay / Tampering - confirm replay and signature tamper remain blocked.
  * success=true means the attacker bypassed protections (regression).
  */
 export async function runReplayTampering(options: {

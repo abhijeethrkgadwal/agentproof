@@ -8,7 +8,7 @@ export function aggregateStudyAttempts(attempts: StudyAttempt[]): StudyAggregate
   const abandoned = attempts.filter((a) => a.abandoned);
 
   return {
-    label: "Observational pilot — not a scientific human-performance study.",
+    label: "Observational pilot - not a scientific human-performance study.",
     participantCount: participants.size,
     attempts: attempts.length,
     successRate: successRate(successes.length, completed.length),

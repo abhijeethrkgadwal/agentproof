@@ -159,7 +159,7 @@ export async function resolveRequestSession(
   const raw = parseCookies(request.headers.get("cookie"))[SESSION_COOKIE];
   if (!raw) return { ok: false, error: "session_missing" };
 
-  // Backward-compat: plain hex session ids from Phase 3–6 still accepted if
+  // Backward-compat: plain hex session ids from Phase 3-6 still accepted if
   // they exist in the store (dev migration). Prefer signed tokens.
   if (/^[a-f0-9]{32}$/i.test(raw)) {
     const stored = await getSessionStore().get(raw);
@@ -178,7 +178,7 @@ export async function resolveRequestSession(
   };
 }
 
-/** @deprecated Prefer resolveRequestSession — returns raw cookie only. */
+/** @deprecated Prefer resolveRequestSession - returns raw cookie only. */
 export function getSessionIdFromRequest(request: Request): string | undefined {
   const raw = parseCookies(request.headers.get("cookie"))[SESSION_COOKIE];
   if (!raw) return undefined;

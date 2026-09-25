@@ -42,13 +42,13 @@ function StudyAggregatePanel() {
         <li>
           median time:{" "}
           {aggregate.medianCompletionTimeMs === null
-            ? "—"
+            ? "-"
             : `${Math.round(aggregate.medianCompletionTimeMs)} ms`}
         </li>
         <li>
           p95 time:{" "}
           {aggregate.p95CompletionTimeMs === null
-            ? "—"
+            ? "-"
             : `${Math.round(aggregate.p95CompletionTimeMs)} ms`}
         </li>
       </ul>
@@ -72,7 +72,7 @@ We do NOT collect your name, email, location, fingerprints, keystrokes, clipboar
 
 Results are used in aggregate only. Individual participant results are not shown publicly.
 
-This is an observational pilot — not a scientific human-performance study.`;
+This is an observational pilot - not a scientific human-performance study.`;
 
 export default function StudyPage() {
   const [phase, setPhase] = useState<Phase>("consent");
@@ -243,11 +243,11 @@ export default function StudyPage() {
               Observational pilot
             </h1>
             <p className="mt-2 text-sm text-slate-400">
-              Observational pilot — not a scientific human-performance study.
+              Observational pilot - not a scientific human-performance study.
             </p>
             <p className="mt-1 text-xs text-amber-200/80">
-              Research/portfolio prototype — not production security
-              infrastructure. Target N 30–50; results report honest N only.
+              Research Prototype - not production security
+              infrastructure. Target N 30-50; results report honest N only.
             </p>
           </div>
           <nav className="flex gap-3 text-sm">
@@ -467,7 +467,7 @@ export default function StudyPage() {
             </p>
             <p className="text-sm text-slate-500">
               Individual results are not shown publicly. Aggregates below (and on
-              the Agent Lab dashboard) are labeled as an observational pilot —
+              the Agent Lab dashboard) are labeled as an observational pilot -
               not a scientific human-performance study.
             </p>
             <StudyAggregatePanel />

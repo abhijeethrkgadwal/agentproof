@@ -24,7 +24,7 @@ export function getDisplayJitterPx(): number {
   return Number.isFinite(raw) && raw >= 0 ? raw : 10;
 }
 
-/** EMA blend toward new display target (0–1). */
+/** EMA blend toward new display target (0-1). */
 export function getDisplayEmaAlpha(): number {
   const raw = Number(process.env.AGENTPROOF_DISPLAY_EMA_ALPHA ?? "0.5");
   if (!Number.isFinite(raw)) return 0.5;
@@ -39,7 +39,7 @@ export function getDisplayWobblePx(): number {
   return Number.isFinite(raw) && raw >= 0 ? raw : 36;
 }
 
-/** Per-object display time lag range (ms) — desynchronizes apparent turns. */
+/** Per-object display time lag range (ms) - desynchronizes apparent turns. */
 export function getDisplayLagMs(): number {
   const raw = Number(process.env.AGENTPROOF_DISPLAY_LAG_MS ?? "900");
   return Number.isFinite(raw) && raw >= 0 ? raw : 900;
@@ -95,8 +95,8 @@ export function toDisplayPoses(
   );
 
   const tSec = exactElapsed / 1000;
-  // Shared low-frequency warp (survives EMA) — same family for all objects
-  const lfFreq = 0.18 + hashUnit(`${challenge.challengeId}:lf`) * 0.22; // ~0.18–0.4 Hz
+  // Shared low-frequency warp (survives EMA) - same family for all objects
+  const lfFreq = 0.18 + hashUnit(`${challenge.challengeId}:lf`) * 0.22; // ~0.18-0.4 Hz
   const lfPhase = hashUnit(`${challenge.challengeId}:lfphase`);
 
   const objectIds = challenge.renderConfiguration.objects.map((o) => o.id);
@@ -131,7 +131,7 @@ export function toDisplayPoses(
       byId.get(decoyId) ??
       exactPose;
     const mix =
-      0.35 + hashUnit(`${challenge.challengeId}:${id}:mix`) * 0.25; // 0.35–0.60
+      0.35 + hashUnit(`${challenge.challengeId}:${id}:mix`) * 0.25; // 0.35-0.60
 
     const unitX = hashUnit(
       `${challenge.challengeId}:${id}:${displayElapsed}:x`,

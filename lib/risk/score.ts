@@ -11,7 +11,7 @@ function clamp01(value: number): number {
 }
 
 /**
- * Rule-based interaction risk score (0–1).
+ * Rule-based interaction risk score (0-1).
  * Isolated so it can later be replaced with an ML/anomaly model.
  */
 export function calculateRisk(inputs: RiskInputs): RiskResult {

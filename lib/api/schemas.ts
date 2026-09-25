@@ -40,7 +40,7 @@ export const InteractionPayloadSchema = z.object({
 });
 
 /**
- * Loose telemetry intake — sanitizeTelemetry() enforces allowlists/caps.
+ * Loose telemetry intake - sanitizeTelemetry() enforces allowlists/caps.
  * Strict ClientTelemetrySchema here rejected valid drag sessions once
  * object_moved events exceeded 100.
  */

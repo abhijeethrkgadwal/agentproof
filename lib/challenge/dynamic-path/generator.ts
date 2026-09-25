@@ -93,7 +93,7 @@ export function generateDynamicPathChallenge(
   };
 
   // Accessible: discrete slot index per gate (0=top,1=mid,2=bottom) that is safe
-  // at a reference mid-time — stored server-side only.
+  // at a reference mid-time - stored server-side only.
   const accessibleGateSlots = gates.map(() => randomInt(0, 3));
 
   const groundTruth: DynamicPathGroundTruth = {

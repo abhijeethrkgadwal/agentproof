@@ -1,7 +1,7 @@
 import type { FeatureSnapshot } from "@/lib/features/types";
 
 /**
- * Decision engine interface — ground-truth verification stays SEPARATE.
+ * Decision engine interface - ground-truth verification stays SEPARATE.
  * Engines only score interaction risk / next action from features.
  */
 export type DecisionEngineResult = {

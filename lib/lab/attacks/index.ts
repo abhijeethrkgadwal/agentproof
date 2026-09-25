@@ -18,7 +18,7 @@ export const LAB_V2_ATTACKS: AttackName[] = [
   "replay_tampering",
 ];
 
-/** v0.2 placeholders — not part of regression gates; never invent success. */
+/** v0.2 placeholders - not part of regression gates; never invent success. */
 export const NATURAL_PLACEHOLDER_ATTACKS: AttackName[] = [
   "drag_avoid_placeholder",
   "physical_placeholder",

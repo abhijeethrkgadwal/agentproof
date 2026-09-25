@@ -5,7 +5,7 @@ test.describe("Phase 6 study + accessible", () => {
     await page.goto("/study");
     await expect(page.getByTestId("study-consent")).toBeVisible();
     await expect(
-      page.getByText("Observational pilot — not a scientific human-performance study.", {
+      page.getByText("Observational pilot - not a scientific human-performance study.", {
         exact: true,
       }),
     ).toBeVisible();
@@ -18,9 +18,11 @@ test.describe("Phase 6 study + accessible", () => {
 
   test("accessible demo renders and issues challenge", async ({ page }) => {
     await page.goto("/demo/accessible");
-    await expect(page.getByRole("heading", { name: "AgentProof" })).toBeVisible();
     await expect(
-      page.getByText("not yet a complete WCAG audit", { exact: false }),
+      page.getByRole("heading", { name: "Watch, then choose" }),
+    ).toBeVisible();
+    await expect(
+      page.getByText("Not a WCAG certification", { exact: false }),
     ).toBeVisible();
     await expect(page.getByTestId("a11y-start")).toBeVisible({ timeout: 10000 });
   });

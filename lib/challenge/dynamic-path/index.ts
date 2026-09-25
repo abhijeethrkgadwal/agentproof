@@ -86,7 +86,7 @@ export function toDynamicPathPublic(
       },
     },
     accessibilityHint:
-      "Accessible mode: discrete nudges with live opening announcements. Pilot only — not WCAG-certified.",
+      "Accessible mode: discrete nudges with live opening announcements. Pilot only - not WCAG-certified.",
   };
 }
 

@@ -1,5 +1,9 @@
 import type { DecisionEngine, DecisionEngineResult } from "@/lib/decision/types";
 import type { FeatureSnapshot } from "@/lib/features/types";
+import {
+  getChallengeRiskProfile,
+  isNaturalChallengeType,
+} from "@/lib/risk/profiles";
 import { calculateRisk } from "@/lib/risk/score";
 import { bandForScore, decisionForBand } from "@/lib/risk/types";
 
@@ -29,16 +33,38 @@ function loadConfig(): AdaptiveRuleConfig {
   };
 }
 
+function adaptiveConfigForChallenge(
+  challengeType: string,
+  base: AdaptiveRuleConfig,
+): AdaptiveRuleConfig {
+  if (!isNaturalChallengeType(challengeType)) return base;
+  // Natural challenges may finish soon after min-active with fewer frames
+  // but need richer pointer telemetry than a single click.
+  return {
+    ...base,
+    minFrames: Math.min(base.minFrames, 3),
+    maxFrames: Math.max(base.maxFrames, 200),
+    minInteractions: Math.max(base.minInteractions, 4),
+  };
+}
+
 /**
- * Rule-based DecisionEngine with Phase 7 adaptive heuristics.
- * Ground truth is evaluated outside this engine. No ML / Jev.
+ * Rule-based DecisionEngine with Phase 7 adaptive heuristics + Phase 10
+ * challenge-type-aware thresholds. Ground truth is evaluated outside this
+ * engine. No ML / Jev.
  */
 export class RuleDecisionEngine implements DecisionEngine {
-  readonly id = "rule_decision_engine_v2";
+  readonly id = "rule_decision_engine_v3";
 
   constructor(private readonly config: AdaptiveRuleConfig = loadConfig()) {}
 
   evaluate(features: FeatureSnapshot): DecisionEngineResult {
+    const profile = getChallengeRiskProfile(features.challengeType);
+    const adaptive = adaptiveConfigForChallenge(
+      features.challengeType,
+      this.config,
+    );
+
     const base = calculateRisk({
       challengeSolved: features.verified,
       completionTimeMs: features.completionTimeMs,
@@ -47,6 +73,7 @@ export class RuleDecisionEngine implements DecisionEngine {
       interactionEventCount: features.interactionEventCount,
       challengeAgeMs: features.challengeAgeMs,
       framePollCount: features.frameCount,
+      challengeType: features.challengeType,
     });
 
     const extra: Array<{ code: string; weight: number; detail: string }> = [
@@ -54,28 +81,28 @@ export class RuleDecisionEngine implements DecisionEngine {
     ];
     let bump = 0;
 
-    // Timing
-    if (features.completionTimeMs < 1500) {
+    // Timing - challenge-aware absolute floor (natural allows fast verified solves)
+    if (features.completionTimeMs < profile.adaptiveTooFastMs) {
       bump += 0.25;
       extra.push({
         code: "adaptive_too_fast",
         weight: 0.25,
-        detail: "Completion faster than credible observation window",
+        detail: `Completion faster than credible ${profile.kind} observation window (${profile.adaptiveTooFastMs}ms)`,
       });
     }
 
     // Retries
-    if (features.retryCount > this.config.maxRetries) {
+    if (features.retryCount > adaptive.maxRetries) {
       bump += 0.2;
       extra.push({
         code: "adaptive_retries",
         weight: 0.2,
-        detail: `retryCount ${features.retryCount} > ${this.config.maxRetries}`,
+        detail: `retryCount ${features.retryCount} > ${adaptive.maxRetries}`,
       });
     }
 
     // Request cadence / frame volume
-    if (features.frameCount > 0 && features.frameCount < this.config.minFrames) {
+    if (features.frameCount > 0 && features.frameCount < adaptive.minFrames) {
       bump += 0.15;
       extra.push({
         code: "adaptive_sparse_frames",
@@ -83,7 +110,7 @@ export class RuleDecisionEngine implements DecisionEngine {
         detail: `Only ${features.frameCount} frames observed`,
       });
     }
-    if (features.frameCount > this.config.maxFrames) {
+    if (features.frameCount > adaptive.maxFrames) {
       bump += 0.1;
       extra.push({
         code: "adaptive_dense_polling",
@@ -92,10 +119,11 @@ export class RuleDecisionEngine implements DecisionEngine {
       });
     }
 
-    // Interaction consistency
+    // Interaction consistency - sparse remains suspicious for all types;
+    // natural verified solves with rich pointer streams are not punished here.
     if (
       features.verified &&
-      features.interactionEventCount < this.config.minInteractions
+      features.interactionEventCount < adaptive.minInteractions
     ) {
       bump += 0.15;
       extra.push({
@@ -109,7 +137,7 @@ export class RuleDecisionEngine implements DecisionEngine {
       features.frameCount > 0
         ? features.apiRequestCount / features.frameCount
         : features.apiRequestCount;
-    if (apiPerFrame > this.config.maxApiPerFrame) {
+    if (apiPerFrame > adaptive.maxApiPerFrame) {
       bump += 0.1;
       extra.push({
         code: "adaptive_api_cadence",

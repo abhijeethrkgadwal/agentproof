@@ -12,7 +12,7 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
-    // Phase 2 measurement harness — keep untouched for retests
+    // Phase 2 measurement harness - keep untouched for retests
     "scripts/attacks/**",
   ]),
 ]);

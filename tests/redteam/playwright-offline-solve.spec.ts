@@ -103,7 +103,7 @@ test.describe("red-team Playwright offline solve", () => {
     const scaleX = box!.width / challengePayload!.renderConfiguration.width;
     const scaleY = box!.height / challengePayload!.renderConfiguration.height;
 
-    // Click start position immediately — do not wait to "observe" motion
+    // Click start position immediately - do not wait to "observe" motion
     await page.mouse.click(
       box!.x + object.start.x * scaleX,
       box!.y + object.start.y * scaleY,

@@ -72,7 +72,7 @@ export function VerificationResult({
           {result.factors.map((factor) => (
             <li key={factor.code}>
               <span className="font-mono text-slate-300">{factor.code}</span>
-              {" — "}
+              {" - "}
               {factor.detail}
             </li>
           ))}

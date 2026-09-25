@@ -1,5 +1,5 @@
 /**
- * Level 2 — Playwright browser automation against /demo.
+ * Level 2 - Playwright browser automation against /demo.
  * Observes progressive frame API responses while driving Start/Verify UI.
  */
 import { chromium } from "@playwright/test";
@@ -138,7 +138,7 @@ async function oneRun(browser) {
     await page.mouse.click(box.x + last.x * scaleX, box.y + last.y * scaleY);
     actions += 1;
   } else if (box) {
-    // Fallback: probe canvas center — still counts as an automation attempt
+    // Fallback: probe canvas center - still counts as an automation attempt
     await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
     actions += 1;
   }

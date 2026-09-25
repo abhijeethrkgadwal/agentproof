@@ -10,7 +10,7 @@ export type ChallengeDifficulty = 1 | 2 | 3 | 4 | 5;
 export type AccessibilityStrategy = {
   /** Short description of the equivalent non-drag task. */
   summary: string;
-  /** Pilot disclaimer — not WCAG-certified. */
+  /** Pilot disclaimer - not WCAG-certified. */
   disclaimer: string;
   mode: "keyboard_sequence" | "structured_input" | "temporal_select";
 };

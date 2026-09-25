@@ -1,6 +1,6 @@
 # Security
 
-**Label:** Research/portfolio prototype — not production security infrastructure.
+**Label:** Research Prototype - not production security infrastructure.
 
 AgentProof is an adaptive verification research prototype. It measures interaction risk and raises the cost of automation. It does **not** claim to be AI-proof, CAPTCHA-complete, or suitable as sole production authentication.
 
@@ -37,4 +37,6 @@ See [`threat-model.md`](./threat-model.md). High-level: network observers, scrip
 
 ## Reporting
 
-Treat findings as research notes. Do not deploy as production security infrastructure without independent review.
+Treat findings as research notes. Prefer opening issues on
+[github.com/abhijeethrkgadwal/agentproof](https://github.com/abhijeethrkgadwal/agentproof).
+Do not deploy as production security infrastructure without independent review.

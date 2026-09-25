@@ -194,7 +194,7 @@ export function PhysicalInteractionChallenge({
     push(next.x, next.y, "move");
   };
 
-  const live = `Red block at ${Math.round(agent.x)}, ${Math.round(agent.y)}. Blue block at ${Math.round(protAnnounce.x + protAnnounce.w / 2)}, ${Math.round(protAnnounce.y + protAnnounce.h / 2)}. Platform x ${layout.platform.x}–${layout.platform.x + layout.platform.width}.`;
+  const live = `Red block at ${Math.round(agent.x)}, ${Math.round(agent.y)}. Blue block at ${Math.round(protAnnounce.x + protAnnounce.w / 2)}, ${Math.round(protAnnounce.y + protAnnounce.h / 2)}. Platform x ${layout.platform.x}-${layout.platform.x + layout.platform.width}.`;
 
   if (accessibleMode) {
     return (

@@ -27,7 +27,7 @@ function parseSetCookie(headers: Headers): string | undefined {
 }
 
 /**
- * Level 1 — API observer: start → poll frames → reconstruct trail → verify.
+ * Level 1 - API observer: start → poll frames → reconstruct trail → verify.
  * Does not modify the Phase 3 protocol; uses public APIs only.
  */
 export async function runL1ApiObserver(

@@ -74,7 +74,7 @@ export default function ChallengeLabPage() {
           <p className="max-w-2xl text-slate-400">
             Development testing only. Record instruction clarity, completion
             time, success/failure, retries, abandonment, and subjective
-            difficulty (1–5). This page does not claim statistical validity.
+            difficulty (1-5). This page does not claim statistical validity.
           </p>
         </div>
 
@@ -119,7 +119,7 @@ export default function ChallengeLabPage() {
 
                 <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                   <label className="text-sm text-slate-400">
-                    Instruction clarity (1–5)
+                    Instruction clarity (1-5)
                     <input
                       type="range"
                       min={1}
@@ -135,7 +135,7 @@ export default function ChallengeLabPage() {
                     <span className="font-mono text-cyan-300">{row.clarity}</span>
                   </label>
                   <label className="text-sm text-slate-400">
-                    Subjective difficulty (1–5)
+                    Subjective difficulty (1-5)
                     <input
                       type="range"
                       min={1}

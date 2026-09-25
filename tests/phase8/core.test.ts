@@ -40,7 +40,7 @@ describe("Phase 8 API key authorization", () => {
     if (!result.ok) expect(result.error).toBe("api_key_required_for_live");
   });
 
-  it("rejects invalid api keys (P0 — no silent ignore)", () => {
+  it("rejects invalid api keys (P0 - no silent ignore)", () => {
     const req = new Request("http://localhost/api/challenge", {
       method: "POST",
       headers: { "X-AgentProof-Key": "ap_test_thisisnotavalidkey0123456789" },

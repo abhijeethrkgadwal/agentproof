@@ -50,7 +50,7 @@ export function appendStudyAttempt(
   return row;
 }
 
-/** Internal only — never expose individual rows via public API. */
+/** Internal only - never expose individual rows via public API. */
 export function listStudyAttemptsInternal(): StudyAttempt[] {
   return [...ensureStore()];
 }

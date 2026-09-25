@@ -8,7 +8,7 @@ AgentProof assesses **interaction risk** for a session. It does **not** claim to
 - Replay of consumed challenges
 - Expired challenges
 - Client-claimed success without server ground truth
-- Issued-payload offline derivation (Phase 2 class — blocked since Phase 3)
+- Issued-payload offline derivation (Phase 2 class - blocked since Phase 3)
 - Premature verification before active window
 - Progressive frame trail reconstruction (measured; Phase 5 display harden + Lab V2)
 - Direct HTTP solving without UI

@@ -1,6 +1,6 @@
 /**
  * Phase 2 measurement: offline ground-truth derivation from public payloads.
- * Does not change product security — documents leakage.
+ * Does not change product security - documents leakage.
  */
 import { describe, expect, it } from "vitest";
 import { generateTemporalChallenge } from "@/lib/challenge/generator";
@@ -59,7 +59,7 @@ describe("red-team: motion segment leakage", () => {
       const derived = deriveFromPublic(pub);
       if (derived === stored.groundTruth.correctObjectId) hits += 1;
     }
-    // Attack success rate — documenting leakage severity
+    // Attack success rate - documenting leakage severity
     expect(hits).toBe(100);
   });
 

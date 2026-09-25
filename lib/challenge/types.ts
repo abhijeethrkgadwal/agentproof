@@ -20,7 +20,7 @@ export type MotionSegment = {
   velocity: Vec2;
 };
 
-/** Full object plan — retained only in server storage (temporal). */
+/** Full object plan - retained only in server storage (temporal). */
 export type RenderObject = {
   id: string;
   shape: ShapeKind;
@@ -39,7 +39,7 @@ export type TemporalRenderConfiguration = {
   objects: RenderObject[];
 };
 
-/** Client-visible object identity at issue time — no motion plan. */
+/** Client-visible object identity at issue time - no motion plan. */
 export type PublicSceneObject = {
   id: string;
   shape: ShapeKind;
@@ -191,7 +191,7 @@ export type StoredChallenge = {
   expiresAt: string;
   difficulty: number;
   challengeType: ChallengeType;
-  /** Full private config — never returned wholesale to clients. */
+  /** Full private config - never returned wholesale to clients. */
   renderConfiguration: ChallengeRenderConfiguration;
   groundTruth: ChallengeGroundTruth;
   lifecycle: ChallengeLifecycle;
@@ -204,7 +204,7 @@ export type StoredChallenge = {
   failedAttempts: number;
 };
 
-/** Issued challenge response — no segments / starts / GT fields. */
+/** Issued challenge response - no segments / starts / GT fields. */
 export type PublicChallengeResponse = {
   challengeId: string;
   token: string;

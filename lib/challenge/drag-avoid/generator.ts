@@ -120,7 +120,7 @@ export function generateDragAvoidChallenge(
     obstacles,
   };
 
-  // Accessible corridor labels — server-only correct sequence
+  // Accessible corridor labels - server-only correct sequence
   const labels = ["north", "center", "south"] as const;
   const accessibleSafePath = Array.from({ length: obstacleCount }, () =>
     labels[randomInt(labels.length)]!,

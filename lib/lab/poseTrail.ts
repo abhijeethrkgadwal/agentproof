@@ -1,6 +1,6 @@
 /**
  * Reconstruct approximate direction-change counts from an observed pose trail.
- * Used by L1 API observer — does not touch server ground truth.
+ * Used by L1 API observer - does not touch server ground truth.
  */
 
 export type PoseSample = { t: number; x: number; y: number };
@@ -9,7 +9,7 @@ const THRESHOLD = Math.PI / 6;
 
 export function countDirectionChangesFromTrail(samples: PoseSample[]): number {
   if (samples.length < 4) return 0;
-  // Downsample to ~8–12 windows across the trail for stability
+  // Downsample to ~8-12 windows across the trail for stability
   const windows = Math.min(12, Math.max(6, Math.floor(samples.length / 3)));
   const step = Math.max(1, Math.floor((samples.length - 1) / windows));
   const picked: PoseSample[] = [];

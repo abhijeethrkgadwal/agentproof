@@ -6,7 +6,7 @@ import type { AttackRunRecord, BenchmarkRow, LabRunRecord } from "@/lib/lab/type
 import type { StudyAggregate } from "@/lib/study/types";
 
 function fmtMs(v: number | null): string {
-  if (v === null || Number.isNaN(v)) return "—";
+  if (v === null || Number.isNaN(v)) return "-";
   return `${Math.round(v)} ms`;
 }
 
@@ -32,7 +32,7 @@ const autoLabels: Record<string, string> = {
   l1_api_observer: "L1 API observer",
   l2_browser: "L2 Playwright",
   l3_vision: "L3 Vision agent (stub)",
-  lab_v2: "Lab V2 (A–F aggregate)",
+  lab_v2: "Lab V2 (A-F aggregate)",
 };
 
 export default function LabPage() {
@@ -121,9 +121,9 @@ export default function LabPage() {
             </h1>
             <p className="mt-2 max-w-2xl text-sm text-slate-400">
               Challenge types: temporal, drag_avoid, physical, dynamic_path.
-              Historical temporal Lab V2 A–F unchanged. Natural-challenge
-              attackers are placeholders only — no fake benchmarks. Automation
-              Cost is experimental — not a universal security score.
+              Historical temporal Lab V2 A-F unchanged. Natural-challenge
+              attackers are placeholders only - no fake benchmarks. Automation
+              Cost is experimental - not a universal security score.
             </p>
           </div>
           <div className="flex gap-3 text-sm">
@@ -154,7 +154,7 @@ export default function LabPage() {
             onClick={() => void runV2("all")}
             className="rounded border border-cyan-700/60 px-4 py-2 text-sm text-cyan-100 disabled:opacity-40"
           >
-            Run Lab V2 A–F
+            Run Lab V2 A-F
           </button>
           <button
             type="button"
@@ -167,7 +167,7 @@ export default function LabPage() {
           <p className="w-full text-xs text-slate-500">
             L2 CLI: <code className="text-slate-300">npm run lab:l2</code> · Gates:{" "}
             <code className="text-slate-300">npm run lab:gates</code> · L3:{" "}
-            {l3 ? `${l3.id} (${l3.status})` : "—"}
+            {l3 ? `${l3.id} (${l3.status})` : "-"}
           </p>
           {message ? (
             <p className="w-full text-sm text-cyan-200/90" data-testid="lab-message">
@@ -182,7 +182,7 @@ export default function LabPage() {
           </h2>
           <p className="mt-1 text-xs text-amber-200/80">
             {human?.label ??
-              "Observational pilot — not a scientific human-performance study."}
+              "Observational pilot - not a scientific human-performance study."}
           </p>
           <p className="mt-1 text-xs text-slate-500">
             Source: <Link href="/study" className="text-cyan-400">/study</Link>{" "}
@@ -220,10 +220,10 @@ export default function LabPage() {
                     {fmtRate(human?.abandonmentRate ?? 0)}
                   </td>
                   <td className="px-3 py-2">
-                    {human?.medianRetries ?? "—"}
+                    {human?.medianRetries ?? "-"}
                   </td>
                   <td className="px-3 py-2">
-                    {human?.medianInteractionEvents ?? "—"}
+                    {human?.medianInteractionEvents ?? "-"}
                   </td>
                 </tr>
               </tbody>
@@ -265,17 +265,17 @@ export default function LabPage() {
                     <td className="px-3 py-2">{fmtMs(row.p95SolveMs)}</td>
                     <td className="px-3 py-2">
                       {row.medianFrames === null
-                        ? "—"
+                        ? "-"
                         : Math.round(row.medianFrames)}
                     </td>
                     <td className="px-3 py-2">
                       {row.medianApiCalls === null
-                        ? "—"
+                        ? "-"
                         : Math.round(row.medianApiCalls)}
                     </td>
                     <td className="px-3 py-2 font-mono text-cyan-300">
                       {row.medianAutomationCost === null
-                        ? "—"
+                        ? "-"
                         : row.medianAutomationCost.toFixed(2)}
                     </td>
                   </tr>
@@ -285,7 +285,7 @@ export default function LabPage() {
           </div>
 
           <h3 className="mt-6 text-sm font-semibold text-slate-200">
-            Lab V2 attack summary (A–F)
+            Lab V2 attack summary (A-F)
           </h3>
           <ul className="mt-2 grid gap-2 sm:grid-cols-2 font-mono text-xs text-slate-400">
             {v2Summary.map((row) => (
