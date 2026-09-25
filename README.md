@@ -34,7 +34,16 @@ npm run dev -- --port 43123 --hostname 127.0.0.1
 - [Demo hub](http://127.0.0.1:43123/demo) - natural challenges first; temporal research last
 - [Drag & Avoid](http://127.0.0.1:43123/demo/drag-avoid) · [Physical](http://127.0.0.1:43123/demo/physical) · [Dynamic Path](http://127.0.0.1:43123/demo/dynamic-path)
 - [Temporal (research)](http://127.0.0.1:43123/demo/temporal) · [Accessible temporal](http://127.0.0.1:43123/demo/accessible)
-- [Agent Lab](http://127.0.0.1:43123/lab) · [Study](http://127.0.0.1:43123/study)
+- [Agent Lab](http://127.0.0.1:43123/lab) · [Study](http://127.0.0.1:43123/study) · [Challenge lab](http://127.0.0.1:43123/challenge-lab) (dev)
+- [SDK example](http://127.0.0.1:43123/examples/integration.html)
+
+Optional Redis (multi-process / soak):
+
+```bash
+export AGENTPROOF_STORAGE_BACKEND=redis
+export AGENTPROOF_REDIS_URL=redis://127.0.0.1:6379
+npm run soak:redis
+```
 
 ## What you get
 

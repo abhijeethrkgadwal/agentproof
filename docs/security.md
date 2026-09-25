@@ -23,6 +23,7 @@ AgentProof is an adaptive verification research prototype. It measures interacti
 - Optional API keys (hashed at rest); **live** environment requires a live key
 - Invalid / revoked keys rejected (not silently ignored)
 - Test vs live environment separation on keys and sessions
+- Challenge-aware risk profiles (`lib/risk/profiles.ts`) so natural pointer streams are not scored like click challenges
 - Explainable `RuleDecisionEngine` (no ML)
 
 ## Threat model (summary)

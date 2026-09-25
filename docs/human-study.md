@@ -18,7 +18,11 @@ Do not use these results as product claims of human performance or â€œAI-proofâ€
 npm run study:recruit
 ```
 
-Produces `phase-8-recruitment-invite.md` + `phase-8-human-pilot-ops.json`. Target **30-50** voluntary participants; if fewer complete, report **honest N** (never fabricate).
+Prints a recruitment invite + ops checklist to the console. Optionally writes
+`phase-8-recruitment-invite.md` and `phase-8-human-pilot-ops.json` under
+`ATTACK_EVIDENCE_DIR` when that env var is set (not committed to the repo).
+
+Target **30-50** voluntary participants; if fewer complete, report **honest N** (never fabricate).
 
 ## Flow (`/study`)
 

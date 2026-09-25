@@ -1,4 +1,4 @@
-# Threat Model (Phase 6)
+# Threat Model
 
 AgentProof assesses **interaction risk** for a session. It does **not** claim to prove a user is human or that the system is “AI-proof.”
 
@@ -10,9 +10,10 @@ AgentProof assesses **interaction risk** for a session. It does **not** claim to
 - Client-claimed success without server ground truth
 - Issued-payload offline derivation (Phase 2 class - blocked since Phase 3)
 - Premature verification before active window
-- Progressive frame trail reconstruction (measured; Phase 5 display harden + Lab V2)
+- Progressive frame trail reconstruction (measured; display harden + Lab V2)
 - Direct HTTP solving without UI
 - State inference from client-visible JSON
+- Forged trajectories / final poses on natural challenges (server re-validates)
 
 ## Out of scope (current)
 
@@ -21,8 +22,9 @@ AgentProof assesses **interaction risk** for a session. It does **not** claim to
 - Full multimodal vision agents (L3 stub only)
 - External ML / Jev integration (deferred)
 - Complete WCAG conformance audit
+- Real automated attackers for natural challenges (placeholders only in Lab)
 
-## Deployment architecture (Phase 7)
+## Deployment architecture
 
 ```text
 Next.js (one or more nodes)
@@ -34,7 +36,6 @@ Next.js (one or more nodes)
 
 Signed sessions + shared Redis are required for correct replay protection across processes.
 
-
 | Property | Status |
 |----------|--------|
 | Offline segment derive | Blocked |
@@ -44,6 +45,7 @@ Signed sessions + shared Redis are required for correct replay protection across
 | Premature verify | Blocked |
 | Expired challenge | Blocked |
 | Frame-trail automation | Measurable residual; Lab V2 tracks |
+| Natural challenge forging | Server GT + trajectory / physics checks; Lab attackers not yet real |
 
 ## Privacy principles
 
@@ -51,6 +53,6 @@ Minimal telemetry. No fingerprinting, keystroke logs, clipboard, precise locatio
 
 ## Residual weaknesses
 
-Adaptive filtering may still recover direction changes; vision agents untested; human-farm economics unmodeled; accessibility path is pilot-grade.
+Adaptive filtering may still recover direction changes; vision agents untested; human-farm economics unmodeled; accessibility path is pilot-grade; natural Lab attackers are placeholders only.
 
-See also historical `docs/THREAT-MODEL.md` (Phase 1) and phase attack reports under the project store `internal/`.
+See also [`security.md`](./security.md), [`limitations.md`](./limitations.md), and [`agent-lab.md`](./agent-lab.md).
