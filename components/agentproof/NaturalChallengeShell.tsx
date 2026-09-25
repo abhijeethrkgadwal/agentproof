@@ -165,11 +165,13 @@ export function NaturalChallengeShell({
       if (!response.ok) {
         throw new Error(data.error ?? "Failed to start challenge");
       }
+      // Align local clock to server elapsed so UI timer matches GT timing.
       const now = Date.now();
+      const serverElapsed = Math.max(0, data.elapsedMs ?? 0);
       setPoses(data.poses);
-      setElapsedMs(data.elapsedMs);
+      setElapsedMs(serverElapsed);
       setComplete(data.complete);
-      setStartedAt(now);
+      setStartedAt(now - serverElapsed);
       setLoadState("active");
       setRunKey((k) => k + 1);
       pushEvent("challenge_started");
@@ -178,7 +180,8 @@ export function NaturalChallengeShell({
     }
   };
 
-  // Local wall-clock keeps the timer moving even if frame polls are delayed.
+  // Local wall-clock owns the UI timer. Frame polls must not overwrite
+  // elapsedMs — on Vercel latency that jumps the bar backward (twitch).
   useEffect(() => {
     if (loadState !== "active" || startedAt === null) return;
     const tick = () => {
@@ -197,6 +200,7 @@ export function NaturalChallengeShell({
     if (loadState !== "active") return;
     let cancelled = false;
     let timer = 0;
+    let pollGeneration = 0;
 
     const schedule = (delay: number) => {
       timer = window.setTimeout(() => void poll(), delay);
@@ -205,6 +209,7 @@ export function NaturalChallengeShell({
     const poll = async () => {
       const current = challengeRef.current;
       if (cancelled || !current) return;
+      const generation = ++pollGeneration;
       try {
         const response = await fetch("/api/challenge/frame", {
           method: "POST",
@@ -215,7 +220,7 @@ export function NaturalChallengeShell({
             token: current.token,
           }),
         });
-        if (cancelled) return;
+        if (cancelled || generation !== pollGeneration) return;
         if (response.status === 429) {
           pollDelayRef.current = Math.min(
             FRAME_POLL_MAX_MS,
@@ -229,9 +234,9 @@ export function NaturalChallengeShell({
           return;
         }
         const data = (await response.json()) as FrameResponse;
-        if (cancelled) return;
+        if (cancelled || generation !== pollGeneration) return;
         setPoses(data.poses);
-        setElapsedMs(data.elapsedMs);
+        // Do not setElapsedMs from server — wall clock owns the timer UI.
         if (data.complete) setComplete(true);
         pollDelayRef.current = FRAME_POLL_MS;
       } catch {
