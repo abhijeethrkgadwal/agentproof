@@ -7,7 +7,7 @@ import type { SessionRecord, SessionStore } from "@/lib/security/session";
 
 export type RedisLike = {
   get(key: string): Promise<string | null>;
-  /** ioredis: set(key, value, 'EX', seconds) — object `{ EX }` is NOT supported. */
+  /** ioredis: set(key, value, 'EX', seconds) - object `{ EX }` is NOT supported. */
   set(
     key: string,
     value: string,

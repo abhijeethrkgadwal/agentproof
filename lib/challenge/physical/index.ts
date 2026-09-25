@@ -131,7 +131,7 @@ export function toPhysicalPublic(
       },
     },
     accessibilityHint:
-      "Accessible mode: discrete nudges with live position announcements. Pilot only — not WCAG-certified.",
+      "Accessible mode: discrete nudges with live position announcements. Pilot only - not WCAG-certified.",
   };
 }
 

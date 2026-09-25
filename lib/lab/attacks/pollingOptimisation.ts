@@ -4,7 +4,7 @@ import { computeAutomationCost, type AttackRunRecord } from "@/lib/lab/types";
 import type { PoseSample } from "@/lib/lab/poseTrail";
 
 /**
- * B. Polling Optimisation — try multiple poll intervals; pick cheapest success.
+ * B. Polling Optimisation - try multiple poll intervals; pick cheapest success.
  */
 export async function runPollingOptimisation(options: {
   baseUrl: string;

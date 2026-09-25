@@ -162,7 +162,7 @@ async function main() {
   const cookie4 = cookieHeader(c4.setCookie);
   // Force expiry via internal store is not available over HTTP; emulate by
   // waiting is too slow. Instead: corrupt expires by using a made-up id after
-  // a fresh challenge that we never start — verify should 404/410/409.
+  // a fresh challenge that we never start - verify should 404/410/409.
   // Stronger: start then verify with wrong challenge binding after TTL isn't
   // practical in CI. Use a synthetic expired token path: challenge not found
   // after clear isn't possible. We check that verify on unknown id → 404,
@@ -247,7 +247,7 @@ async function main() {
     `attacker_success=${directA?.success ?? "n/a"}`,
   );
 
-  // Phase 7: polling residual suppressed — sample multiple batches.
+  // Phase 7: polling residual suppressed - sample multiple batches.
   // Exact attacker unchanged; shotgun of 3 intervals ≈ chance among ~7 objects.
   // Require ≤1/5 batch successes (≤20%), vs Phase 6 single-run residual pass.
   console.log("\nSampling polling_optimisation × 5…");

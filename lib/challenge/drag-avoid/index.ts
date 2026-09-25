@@ -77,7 +77,7 @@ export function toDragAvoidPublic(
       },
     },
     accessibilityHint:
-      "Accessible mode: discrete arrow nudges with live position announcements. Pilot only — not WCAG-certified.",
+      "Accessible mode: discrete arrow nudges with live position announcements. Pilot only - not WCAG-certified.",
   };
 }
 
@@ -229,7 +229,7 @@ export function validateDragAvoid(
     return { correct: false, reason: "missed_target" };
   }
 
-  // Only hold-check a short grace window — early finish should not fail
+  // Only hold-check a short grace window - early finish should not fail
   // because an obstacle later sweeps the parked agent.
   const holdEnd = Math.min(c.durationMs, last.t + 400);
   for (let t = last.t; t <= holdEnd; t += 100) {

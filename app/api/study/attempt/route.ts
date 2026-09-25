@@ -45,7 +45,7 @@ export async function POST(request: Request) {
     {
       ok: true,
       attemptId: attempt.attemptId,
-      // Echo only the caller's own attempt id — never list others.
+      // Echo only the caller's own attempt id - never list others.
     },
     { headers: { "Cache-Control": "no-store" } },
   );

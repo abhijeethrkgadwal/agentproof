@@ -10,7 +10,7 @@ AgentProof’s **Agent Evaluation Lab** measures how expensive and reliable it i
 | L1 API observer | Poll `/frame`, reconstruct trails, verify |
 | L2 Playwright | Browser automation on `/demo/temporal` |
 | L3 Vision | Stub interface only (no model) |
-| Lab V2 A–F | Stronger automated strategies (see below) |
+| Lab V2 A-F | Stronger automated strategies (see below) |
 
 ## Lab V2 attacks
 
@@ -53,7 +53,7 @@ Dashboard: `/lab`
 
 Lab identifiers: `temporal`, `drag_avoid`, `physical`, `dynamic_path`.
 
-Temporal Lab V2 A–F attacks are unchanged. Natural challenges expose **placeholder** attackers only (`drag_avoid_placeholder`, `physical_placeholder`, `dynamic_path_placeholder`) that always record `attacker_not_implemented` — **no fake benchmark data**.
+Temporal Lab V2 A-F attacks are unchanged. Natural challenges expose **placeholder** attackers only (`drag_avoid_placeholder`, `physical_placeholder`, `dynamic_path_placeholder`) that always record `attacker_not_implemented` - **no fake benchmark data**.
 
 L2 CLI targets `/demo/temporal` (original research challenge).
 

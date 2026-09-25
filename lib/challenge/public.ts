@@ -19,7 +19,7 @@ import {
 } from "@/lib/challenge/dynamic-path";
 
 /**
- * Issued payload: object identity only — never segments, starts, or
+ * Issued payload: object identity only - never segments, starts, or
  * requiredDirectionChanges as a structured field (instruction text may still
  * state the human-facing task).
  */
@@ -67,7 +67,7 @@ export function toPublicChallenge(
 }
 
 /**
- * Progressive frame response — display poses are quantized/jittered,
+ * Progressive frame response - display poses are quantized/jittered,
  * time-bucketed, and EMA-smoothed so they are not a clean invert of
  * internal segment math. Ground-truth math stays server-only.
  */
@@ -104,7 +104,7 @@ export function toFrameResponse(
   };
 }
 
-/** Guard helper for tests / audits — public JSON must not embed motion plans. */
+/** Guard helper for tests / audits - public JSON must not embed motion plans. */
 export function publicPayloadLeaksMotion(payload: unknown): boolean {
   const text = JSON.stringify(payload);
   if (text.includes('"segments"')) return true;

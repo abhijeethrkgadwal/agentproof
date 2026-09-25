@@ -75,7 +75,7 @@ export async function POST(request: Request) {
         createdAt: result.record.createdAt,
       },
       secret: result.secret,
-      warning: "Store the secret now — it will not be shown again.",
+      warning: "Store the secret now - it will not be shown again.",
     });
   }
   if (action === "revoke_key") {

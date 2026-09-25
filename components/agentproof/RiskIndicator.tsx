@@ -41,7 +41,7 @@ export function RiskIndicator({
       </div>
       <p className="font-mono text-2xl text-slate-100">{riskScore.toFixed(2)}</p>
       <p className="text-xs text-slate-500">
-        Not a probability of being human — an explainable interaction risk signal.
+        Not a probability of being human - an explainable interaction risk signal.
       </p>
     </div>
   );

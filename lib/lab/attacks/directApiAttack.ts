@@ -2,7 +2,7 @@ import { labPost, type HttpJar } from "@/lib/lab/attacks/http";
 import { computeAutomationCost, type AttackRunRecord } from "@/lib/lab/types";
 
 /**
- * D. Direct API Attack — solve entirely through HTTP, no visual UI.
+ * D. Direct API Attack - solve entirely through HTTP, no visual UI.
  * Attempts issued-only verify and post-start guess without trail math.
  */
 export async function runDirectApiAttack(options: {

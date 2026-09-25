@@ -21,9 +21,9 @@ const mono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "AgentProof — Adaptive verification for the agentic web",
+  title: "AgentProof - Make automated access expensive and detectable",
   description:
-    "Research prototype for adaptive human/automation verification. Measurable interaction risk — not an AI-proof CAPTCHA.",
+    "Open-source research prototype for adaptive interaction risk on the agentic web. Not AI-proof. Not production security infrastructure.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
@@ -32,7 +32,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       lang="en"
       className={`${display.variable} ${body.variable} ${mono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-background text-foreground">
+      <body
+        className="min-h-full flex flex-col bg-background text-foreground"
+        suppressHydrationWarning
+      >
         {children}
       </body>
     </html>

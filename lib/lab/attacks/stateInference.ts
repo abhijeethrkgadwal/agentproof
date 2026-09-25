@@ -2,7 +2,7 @@ import { labPost, type HttpJar } from "@/lib/lab/attacks/http";
 import { computeAutomationCost, type AttackRunRecord } from "@/lib/lab/types";
 
 /**
- * E. State Inference — inspect client-visible challenge state only;
+ * E. State Inference - inspect client-visible challenge state only;
  * attempt to infer GT without reconstructing the full path.
  */
 export async function runStateInference(options: {
@@ -56,7 +56,7 @@ export async function runStateInference(options: {
     Number(
       (challenge.instruction.match(/exactly\s+(\d+)\s+time/i) || [])[1],
     ) || 2;
-  // Naive: pick middle object id — no motion plan available
+  // Naive: pick middle object id - no motion plan available
   const guess =
     challenge.scene.objects[
       Math.min(required, challenge.scene.objects.length - 1)
@@ -68,7 +68,7 @@ export async function runStateInference(options: {
     token: challenge.token,
   });
 
-  // Wait full window without using pose trails — pure state/heuristic
+  // Wait full window without using pose trails - pure state/heuristic
   await new Promise((r) => setTimeout(r, challenge.scene.durationMs + 200));
 
   interactions += 1;

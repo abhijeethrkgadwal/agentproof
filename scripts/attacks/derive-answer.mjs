@@ -1,7 +1,7 @@
 /**
  * Phase 2 red-team: derive the correct object from public renderConfiguration.
  * Mirrors server direction-change logic (angle delta > π/6).
- * Measurement artifact only — not a product feature.
+ * Measurement artifact only - not a product feature.
  */
 
 const DIRECTION_CHANGE_THRESHOLD = Math.PI / 6;

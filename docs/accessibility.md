@@ -1,35 +1,38 @@
-# Accessibility notes (Phase 8 validation)
+# Accessibility notes
 
-**Label:** Research/portfolio prototype — not production security infrastructure.
+**Label:** Research Prototype - not WCAG-certified.
 
-The `/demo/accessible` path provides an **equivalent progressive-frame verification** using a list of objects, live region updates, and keyboard-focusable controls. The `/study` flow also offers a list presentation toggle.
+## What visitors should know
 
-## Validated in Phase 8 (manual checklist)
+AgentProof’s main natural demos are pointer/drag based. For people who prefer a **keyboard or list** experience, use:
 
-| Path | Result |
+**[/demo/accessible](/demo/accessible)** - “Watch, then choose”
+
+That path is the **temporal research challenge** without a canvas:
+
+1. Read the instruction  
+2. Start watching  
+3. Wait until watching finishes  
+4. Select an object from the list  
+5. Verify  
+
+It uses the **same server protocol** as the visual temporal demo (`/challenge` → `/start` → `/frame` → `/verify`).
+
+Natural demos also offer an in-challenge **“Use keyboard controls”** toggle for discrete nudges. That is a pilot aid, not a full accessibility program.
+
+## Pilot status
+
+| Path | Status |
 |------|--------|
-| Keyboard-only on `/demo/accessible` | Start → select object (Tab/Enter) → Verify operable |
-| Focus management | Controls are focusable; verify disabled until selection + complete |
-| Screen-reader path | `aria-live` announces issue/start/complete; list buttons labeled with id/shape/color/position |
-| Clear instructions | Challenge `instruction` text + live region copy |
-| Study a11y toggle | List presentation records `accessibilityPathUsed` |
+| `/demo/accessible` | Operable with keyboard focus + `aria-live` status |
+| Natural “keyboard controls” | Pilot nudges; not a complete alternative UX |
+| Full WCAG 2.2 AA | **Not claimed** |
 
-Evidence: `media/phase-8-a11y-validation.json` (checklist run).
+## Remaining gaps
 
-## What works in the pilot
-
-- Same server protocol as canvas (`/challenge` → `/start` → `/frame` → `/verify`)
-- Difficulty 1 and 2
-- `aria-live` status updates
-- Button list selection with `aria-pressed` (accessible demo)
-- Focus outlines on controls
-
-## Remaining WCAG gaps (not a full audit)
-
-- No complete keyboard canvas alternative beyond the list path
-- Color is still used as one object cue (also labeled with id/shape/position)
-- No independent screen-reader lab (NVDA/VoiceOver) certification
+- Canvas paths are not fully keyboard-operable
+- Color remains one object cue (also labeled with id / shape / position)
+- No independent screen-reader certification (NVDA / VoiceOver)
 - Contrast / `prefers-reduced-motion` not fully audited
-- No formal WCAG 2.2 AA conformance claim
 
 **Do not claim full WCAG compliance without an independent audit.**

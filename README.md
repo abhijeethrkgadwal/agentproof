@@ -1,96 +1,97 @@
 # AgentProof
 
-Adaptive verification for the agentic web.
+**Make automated access expensive and detectable.**
 
-**New agents: start with [`docs/AGENT-HANDOFF.md`](docs/AGENT-HANDOFF.md).**
+Open-source **research / portfolio prototype** for adaptive interaction risk on the agentic web.
 
-**Research/portfolio prototype — not production security infrastructure.**
+It does **not** claim to be AI-proof, and it does **not** claim to prove that someone is human.
 
-AgentProof issues dynamic interaction challenges, keeps ground truth on the server, signs challenge + session metadata, prevents replay, and returns an explainable **interaction risk score** (`allow` / `step_up` / `restrict`).
+Canonical repo: [github.com/abhijeethrkgadwal/agentproof](https://github.com/abhijeethrkgadwal/agentproof)
 
-It does **not** claim to be “AI-proof” or to prove that a user is human.
+## Why it exists
 
-## Versions
+Automated agents can scrape, script, and replay their way toward core endpoints (logins, APIs, high-value actions). Static challenges leak enough structure to solve offline. “Prove you are human” is the wrong product promise.
 
-### AgentProof v0.1 — Research/security foundation
+AgentProof explores a different approach:
 
-Temporal challenge, progressive frames, HMAC/session/replay gates, Agent Lab V2, study pilot, Redis-ready stores, SDK path, Phase 8 validation.
+1. Keep **ground truth on the server**
+2. Issue short-lived, signed interaction challenges
+3. Measure **interaction risk** and **automation cost**
+4. Return **allow / step_up / restrict** so humans can supervise sensitive access
 
-### AgentProof v0.2 — Natural interaction challenge experiments
+The aim is measurable friction against automated abuse - not impossible challenges.
 
-Adds **Dynamic Drag & Avoid**, **Physical Interaction**, and **Dynamic Path** on the same server-authoritative stack. Temporal remains the original research challenge at `/demo/temporal`.
-
-**v0.2 is an experimental challenge UX release and is not production security infrastructure.**
-
-See [`docs/challenges-v02.md`](docs/challenges-v02.md).
-
-## Quick start
+## Try it
 
 ```bash
 cp .env.example .env.local
-# set AGENTPROOF_SIGNING_SECRET
+# set AGENTPROOF_SIGNING_SECRET to a long random string
 
 npm install
 npm run dev -- --port 43123 --hostname 127.0.0.1
 ```
 
-- [Demo hub](http://127.0.0.1:43123/demo) · [Temporal](http://127.0.0.1:43123/demo/temporal) · [Drag & Avoid](http://127.0.0.1:43123/demo/drag-avoid)
-- [Physical](http://127.0.0.1:43123/demo/physical) · [Dynamic Path](http://127.0.0.1:43123/demo/dynamic-path)
-- [Challenge lab](http://127.0.0.1:43123/challenge-lab) · [Study](http://127.0.0.1:43123/study) · [Lab](http://127.0.0.1:43123/lab)
-- [Accessible](http://127.0.0.1:43123/demo/accessible) · [SDK example](http://127.0.0.1:43123/examples/integration.html)
+- [Demo hub](http://127.0.0.1:43123/demo) - natural challenges first; temporal research last
+- [Drag & Avoid](http://127.0.0.1:43123/demo/drag-avoid) · [Physical](http://127.0.0.1:43123/demo/physical) · [Dynamic Path](http://127.0.0.1:43123/demo/dynamic-path)
+- [Temporal (research)](http://127.0.0.1:43123/demo/temporal) · [Accessible temporal](http://127.0.0.1:43123/demo/accessible)
+- [Agent Lab](http://127.0.0.1:43123/lab) · [Study](http://127.0.0.1:43123/study)
 
-## Redis (optional)
+## What you get
 
-```bash
-export AGENTPROOF_STORAGE_BACKEND=redis
-export AGENTPROOF_REDIS_URL=redis://127.0.0.1:6379
-npm run soak:redis
-```
+| Surface | Purpose |
+|---------|---------|
+| Natural challenges (v0.2) | Drag / physics / path experiments people can actually try |
+| Temporal (research) | Original observe-and-select security baseline |
+| Accessible path | Keyboard / list version of temporal (pilot, not WCAG-certified) |
+| Agent Lab | Measure automated attacks and automation cost |
+| Risk engine | Explainable `riskScore` → allow · step_up · restrict |
 
-## Architecture
+## Architecture (short)
 
 ```text
-Browser                     Server
-──────                     ──────
-POST /api/challenge  ────> signed session cookie + issued identity
-POST /start,/frame   ────> progressive display poses (≠ GT math)
-POST /api/verify     ────> GT check ⟂ DecisionEngine(features)
-                     <──── verified + decision + risk factors
+ISSUE → START → ACTIVE → INTERACT → VERIFY → CONSUME → DECISION
 ```
 
-Challenge types: `temporal` | `drag_avoid` | `physical` | `dynamic_path`.
+- HMAC-signed challenge + session
+- Progressive `/frame` poses (display ≠ ground-truth math)
+- Client success flags are never trusted
+- Challenge-aware rule DecisionEngine (no ML by default)
 
-## Automation Cost
-
-Experimental metric only:
-
-`timeToSolveMs/1000 + 0.5*interactionCount + 0.1*framesObserved + 0.05*apiRequestCount`
+Details: [`docs/architecture.md`](docs/architecture.md), [`docs/security.md`](docs/security.md).
 
 ## Docs
 
-- [`docs/challenges-v02.md`](docs/challenges-v02.md)
-- [`docs/security.md`](docs/security.md)
+**Start here (humans visiting / hiring / reviewing):**
+
+- [`docs/case-study.md`](docs/case-study.md) - problem, vision, what shipped
+- [`docs/limitations.md`](docs/limitations.md) - what not to claim
+- [`docs/challenges-v02.md`](docs/challenges-v02.md) - natural challenge UX notes
+- [`docs/accessibility.md`](docs/accessibility.md) - accessible path status
+
+**Builders / red-team:**
+
 - [`docs/architecture.md`](docs/architecture.md)
+- [`docs/security.md`](docs/security.md)
+- [`docs/threat-model.md`](docs/threat-model.md)
 - [`docs/agent-lab.md`](docs/agent-lab.md)
-- [`docs/human-study.md`](docs/human-study.md)
-- [`docs/limitations.md`](docs/limitations.md)
-- [`docs/case-study.md`](docs/case-study.md)
-- [`docs/accessibility.md`](docs/accessibility.md)
 - [`docs/developer-integration.md`](docs/developer-integration.md)
+- [`docs/human-study.md`](docs/human-study.md)
 
 ## Tests
 
 ```bash
-npm test && npm run lint && npm run build
-PLAYWRIGHT_PORT=43123 npm run test:e2e
+npm test
+npm run lint
+npm run build
+npm run test:e2e
 npm run lab:gates -- http://127.0.0.1:43123
 ```
 
-## Roadmap
+## Credit
 
-1–8 delivered (challenge → Lab V2 → study → harden + Redis/SDK → validation).  
-9 — natural challenge lab (this).
+**Abhijeeth Gadwal** - Product & Architecture  
+[GitHub](https://github.com/abhijeethrkgadwal) · [LinkedIn](https://www.linkedin.com/in/abhijeethrkgadwal)
 
 ## License
 
-Private research prototype.
+[MIT](LICENSE) - fork it, break it in the Lab, and propose improvements. Keep research-honest framing: measure cost and risk; do not invent AI-proof claims.

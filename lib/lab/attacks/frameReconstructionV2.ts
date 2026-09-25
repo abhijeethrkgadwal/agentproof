@@ -4,7 +4,7 @@ import { computeAutomationCost, type AttackRunRecord } from "@/lib/lab/types";
 import type { PoseSample } from "@/lib/lab/poseTrail";
 
 /**
- * A. Frame Reconstruction v2 — adaptive smoothing + path reconstruction
+ * A. Frame Reconstruction v2 - adaptive smoothing + path reconstruction
  * against display-hardened /frame poses.
  */
 export async function runFrameReconstructionV2(options: {

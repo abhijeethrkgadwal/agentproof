@@ -3,7 +3,7 @@ import { createVisionAgentStub } from "@/lib/lab/agents/l3VisionStub";
 
 export const runtime = "nodejs";
 
-/** L3 stub probe — confirms interface exists; does not run a model. */
+/** L3 stub probe - confirms interface exists; does not run a model. */
 export async function GET() {
   const agent = createVisionAgentStub();
   const decision = await agent.analyze({

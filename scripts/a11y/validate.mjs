@@ -34,12 +34,16 @@ async function main() {
       });
       checks.push({
         name: "a11y_demo_has_instruction",
-        ok: html.includes("id=\"instruction\"") || html.includes("Loading"),
+        ok:
+          html.includes("challenge-instruction") ||
+          html.includes("id=\"instruction\"") ||
+          html.includes("Loading"),
         detail: "instruction region present",
       });
       checks.push({
         name: "a11y_demo_prototype_disclaimer",
         ok:
+          html.toLowerCase().includes("not a wcag certification") ||
           html.toLowerCase().includes("not yet a complete wcag") ||
           html.toLowerCase().includes("wcag"),
         detail: "WCAG non-claim present",
@@ -76,10 +80,11 @@ async function main() {
   checks.push({
     name: "keyboard_path_controls_present",
     ok:
-      a11yHtml.includes("Accessible path") ||
       a11yHtml.includes("a11y-start") ||
+      a11yHtml.includes("Start watching") ||
       a11yHtml.includes("Start challenge") ||
-      a11yHtml.includes("Difficulty 1"),
+      a11yHtml.includes("Watch, then choose") ||
+      a11yHtml.includes("Keyboard-friendly"),
     detail: "Accessible demo shell with keyboard-operable controls",
   });
 
@@ -92,13 +97,13 @@ async function main() {
 
   const report = {
     phase: 8,
-    label: "research/portfolio prototype — not production security infrastructure",
+    label: "research prototype - not production security infrastructure",
     baseUrl: BASE,
     checkedAt: new Date().toISOString(),
     checks,
     pass: checks.every((c) => c.ok),
     remainingWcagGaps: remainingGaps,
-    note: "Automated smoke + checklist only — not a WCAG audit.",
+    note: "Automated smoke + checklist only - not a WCAG audit.",
   };
 
   writeFileSync(

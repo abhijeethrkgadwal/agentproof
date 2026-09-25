@@ -52,7 +52,7 @@ export type AttackName =
   | "direct_api_attack"
   | "state_inference"
   | "replay_tampering"
-  /** Placeholders for v0.2 natural challenges — no attacker implementation yet. */
+  /** Placeholders for v0.2 natural challenges - no attacker implementation yet. */
   | "drag_avoid_placeholder"
   | "physical_placeholder"
   | "dynamic_path_placeholder";
@@ -93,7 +93,7 @@ export type BenchmarkRow = {
 };
 
 /**
- * Automation Cost — normalized experimental metric ONLY.
+ * Automation Cost - normalized experimental metric ONLY.
  * Not a universal security score. Not “probability of being human.”
  *
  * Formula:

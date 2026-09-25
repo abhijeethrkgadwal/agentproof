@@ -1,6 +1,6 @@
 # Architecture
 
-**Label:** Research/portfolio prototype — not production security infrastructure.
+**Label:** Research Prototype - not production security infrastructure.
 
 ## Overview
 
@@ -25,7 +25,7 @@ POST /api/verify     ────> GT check ⟂ DecisionEngine(features)
 | Decision | `lib/decision/ruleEngine.ts` | Explainable allow / step_up / restrict |
 | Storage | `lib/storage/*` | Memory (default) or Redis |
 | Study | `lib/study/*` | Anonymous pilot attempts + aggregates |
-| Lab | `lib/lab/*` | Automated attack runners A–F |
+| Lab | `lib/lab/*` | Automated attack runners A-F |
 | Developers | `lib/developers/*` | Projects + hashed API keys |
 | SDK | `public/agentproof-sdk.js` | Minimal browser embed |
 
@@ -33,17 +33,17 @@ POST /api/verify     ────> GT check ⟂ DecisionEngine(features)
 
 | `AGENTPROOF_STORAGE_BACKEND` | Behavior |
 |------------------------------|----------|
-| `memory` (default) | In-process maps — fine for local demo / tests |
+| `memory` (default) | In-process maps - fine for local demo / tests |
 | `redis` | Challenge, session, and rate-limit state shared across Node processes |
 
 Boot: `instrumentation.ts` calls `initStorageBackends()`. Requires `AGENTPROOF_REDIS_URL` (or `REDIS_URL`).
 
 ## Progressive frame protocol
 
-1. **Issue** — client receives scene identity + instruction + token (no segments).
-2. **Start** — server starts the active window; first display poses returned.
-3. **Frame** — polled poses use display transforms (lag, contamination, GT-biased warp) so reconstructed trails ≠ ground-truth paths.
-4. **Verify** — server checks selection against GT, lifecycle, session, signature, telemetry features, then DecisionEngine.
+1. **Issue** - client receives scene identity + instruction + token (no segments).
+2. **Start** - server starts the active window; first display poses returned.
+3. **Frame** - polled poses use display transforms (lag, contamination, GT-biased warp) so reconstructed trails ≠ ground-truth paths.
+4. **Verify** - server checks selection against GT, lifecycle, session, signature, telemetry features, then DecisionEngine.
 
 ## Decisions
 

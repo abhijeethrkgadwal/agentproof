@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Phase 3 retest runner — evaluates the same 8 Phase 2 attack goals against the
+ * Phase 3 retest runner - evaluates the same 8 Phase 2 attack goals against the
  * redesigned protocol. Does not modify the original Phase 2 harness.
  */
 import { writeFileSync, mkdirSync } from "node:fs";
@@ -222,14 +222,14 @@ async function main() {
   record("8. Automate with Playwright (Phase 2 offline derive path)", {
     attackerSucceeds: false,
     why: "Unchanged Phase 2 Playwright redteam specs fail: renderConfiguration/segments absent on issued challenge.",
-    evidence: "See playwright.redteam.config.ts run — 2 failed.",
+    evidence: "See playwright.redteam.config.ts run - 2 failed.",
   });
 
   const summary = {
     baseUrl: BASE,
     phase2OfflineSolveBroken: derived.ok !== true && !hasSegments,
     residualNote:
-      "An attacker who starts the challenge and observes progressive frames over wall-clock time may still estimate direction changes — cost is now ~durationMs of interaction, not 0ms offline JSON parse.",
+      "An attacker who starts the challenge and observes progressive frames over wall-clock time may still estimate direction changes - cost is now ~durationMs of interaction, not 0ms offline JSON parse.",
     results,
   };
   writeFileSync(`${OUT}/phase-3-attack-retest.json`, JSON.stringify(summary, null, 2));

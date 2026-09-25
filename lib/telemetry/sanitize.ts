@@ -6,7 +6,7 @@ import {
 
 /**
  * Sanitize client telemetry: drop unknown fields, cap arrays, strip PII-like keys.
- * Intentionally lenient — verify must not 400 solely because a drag session
+ * Intentionally lenient - verify must not 400 solely because a drag session
  * produced many pointer events.
  */
 export function sanitizeTelemetry(raw: unknown): ClientTelemetry {

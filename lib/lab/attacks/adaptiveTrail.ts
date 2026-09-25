@@ -34,7 +34,7 @@ export function smoothTrail(
 }
 
 /**
- * Piecewise-linear “spline” resample — densify path at uniform time steps
+ * Piecewise-linear “spline” resample - densify path at uniform time steps
  * so direction changes are estimated from a reconstructed curve rather than
  * raw jittery samples.
  */

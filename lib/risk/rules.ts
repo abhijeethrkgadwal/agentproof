@@ -1,12 +1,18 @@
+import { getChallengeRiskProfile } from "@/lib/risk/profiles";
 import type { RiskFactor, RiskInputs } from "@/lib/risk/types";
 
 /**
  * Explainable rule contributions. Weights are additive before clamp.
  * Normal successful human interaction should generally land LOW.
+ *
+ * Temporal (v0.1) keeps click/observation heuristics.
+ * Natural challenges (v0.2) expect dense pointer streams; high event
+ * counts alone are not treated as automation when the solve verifies.
  */
 export function evaluateRiskFactors(inputs: RiskInputs): RiskFactor[] {
   const factors: RiskFactor[] = [];
   const expected = inputs.expectedDurationMs ?? 5000;
+  const profile = getChallengeRiskProfile(inputs.challengeType);
 
   if (!inputs.challengeSolved) {
     factors.push({
@@ -32,16 +38,25 @@ export function evaluateRiskFactors(inputs: RiskInputs): RiskFactor[] {
     });
   }
 
-  // Extremely fast completion relative to animation is suspicious
-  if (inputs.challengeSolved && inputs.completionTimeMs < expected * 0.35) {
+  // Extremely fast completion - thresholds are challenge-type-aware.
+  // Verified natural solves may finish soon after min-active; only
+  // near-instant / scripted times are flagged.
+  const tooFastByRatio =
+    inputs.completionTimeMs < expected * profile.tooFastRatio;
+  const tooFastAbsolute =
+    inputs.completionTimeMs < profile.tooFastAbsoluteMs;
+  if (
+    inputs.challengeSolved &&
+    (tooFastAbsolute || tooFastByRatio)
+  ) {
     factors.push({
       code: "too_fast",
-      weight: 0.28,
-      detail: `Completed in ${inputs.completionTimeMs}ms (expected ~${expected}ms)`,
+      weight: profile.tooFastWeight,
+      detail: `Completed in ${inputs.completionTimeMs}ms (expected ~${expected}ms, ${profile.kind} profile)`,
     });
   }
 
-  // Instant click with almost no interaction events
+  // Instant click / no real interaction - suspicious for all types.
   if (inputs.challengeSolved && inputs.interactionEventCount <= 1) {
     factors.push({
       code: "sparse_interaction",
@@ -50,12 +65,24 @@ export function evaluateRiskFactors(inputs: RiskInputs): RiskFactor[] {
     });
   }
 
-  // Excessively many events can indicate scripted probing
-  if (inputs.interactionEventCount > 40) {
+  // Excessively many events: temporal uses a low ceiling (scripted probing).
+  // Natural pointer streams routinely exceed temporal's ceiling; only
+  // pathological volume is treated as suspicious automation.
+  if (inputs.interactionEventCount > profile.excessiveInteractionThreshold) {
     factors.push({
       code: "excessive_interaction",
-      weight: 0.22,
-      detail: `${inputs.interactionEventCount} interaction events`,
+      weight: profile.excessiveInteractionWeight,
+      detail: `${inputs.interactionEventCount} interaction events (${profile.kind} threshold ${profile.excessiveInteractionThreshold})`,
+    });
+  } else if (
+    profile.kind === "natural" &&
+    inputs.interactionEventCount > profile.highDensitySoftCeiling
+  ) {
+    // Mild density signal between soft ceiling and hard excessive threshold.
+    factors.push({
+      code: "pointer_density_elevated",
+      weight: 0.06,
+      detail: `${inputs.interactionEventCount} pointer events (soft ceiling ${profile.highDensitySoftCeiling})`,
     });
   }
 
@@ -74,11 +101,20 @@ export function evaluateRiskFactors(inputs: RiskInputs): RiskFactor[] {
     typeof inputs.serverActiveMs === "number" &&
     inputs.serverActiveMs < expected * 0.5
   ) {
-    factors.push({
-      code: "short_server_active",
-      weight: 0.3,
-      detail: `Server active window ${inputs.serverActiveMs}ms`,
-    });
+    // Natural challenges legitimately finish well under half of durationMs.
+    if (profile.kind === "temporal") {
+      factors.push({
+        code: "short_server_active",
+        weight: 0.3,
+        detail: `Server active window ${inputs.serverActiveMs}ms`,
+      });
+    } else if (inputs.serverActiveMs < profile.tooFastAbsoluteMs) {
+      factors.push({
+        code: "short_server_active",
+        weight: 0.22,
+        detail: `Server active window ${inputs.serverActiveMs}ms (natural floor)`,
+      });
+    }
   }
 
   // Few frame polls → likely non-interactive / scripted verify path

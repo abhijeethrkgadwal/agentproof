@@ -22,6 +22,23 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-body), ui-sans-serif, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+@media (max-width: 640px) {
+  .ap-scanline::after {
+    animation-duration: 10s;
+    opacity: 0.7;
+  }
+}
+
+/* Comfortable tap targets on touch devices without changing desktop chrome */
+@media (pointer: coarse) {
+  button,
+  a {
+    touch-action: manipulation;
+  }
 }
 
 .font-display {

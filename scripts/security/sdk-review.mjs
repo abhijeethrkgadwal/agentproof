@@ -76,7 +76,7 @@ async function main() {
     area: "origin handling / demo UX",
     status: openTest.status === 200 ? "accepted_risk" : "unexpected",
     evidence: { status: openTest.status },
-    note: "Test env remains keyless for Lab/study by design — not production.",
+    note: "Test env remains keyless for Lab/study by design - not production.",
   });
 
   // 5. Replay after consume (if we can start+verify)
@@ -113,7 +113,7 @@ async function main() {
   const p0Open = findings.filter((f) => f.severity === "P0" && f.status === "open");
   const report = {
     phase: 8,
-    label: "research/portfolio prototype — not production security infrastructure",
+    label: "research prototype - not production security infrastructure",
     reviewedAt: new Date().toISOString(),
     baseUrl: BASE,
     findings,

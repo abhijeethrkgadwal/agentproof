@@ -9,7 +9,12 @@ export type RiskInputs = {
   retryCount: number;
   interactionEventCount: number;
   challengeAgeMs: number;
-  /** Expected challenge animation duration — used for timing heuristics. */
+  /**
+   * Challenge type (temporal / drag_avoid / physical / dynamic_path).
+   * Selects challenge-aware risk thresholds; defaults to temporal heuristics.
+   */
+  challengeType?: string;
+  /** Expected challenge animation duration - used for timing heuristics. */
   expectedDurationMs?: number;
   /** Server-observed active window (ms). */
   serverActiveMs?: number;

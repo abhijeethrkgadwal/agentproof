@@ -35,7 +35,7 @@ export function getRateLimitMaxRequests(): number {
 }
 
 /**
- * Frame polls run ~8–12×/sec while a challenge is active. The general API
+ * Frame polls run ~8-12×/sec while a challenge is active. The general API
  * budget (60/min) is far too low and freezes obstacle/gate motion mid-run
  * (especially on a second "New challenge"). Frames get a dedicated ceiling.
  */

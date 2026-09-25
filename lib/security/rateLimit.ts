@@ -16,7 +16,7 @@ export async function checkRateLimit(
   return getRateLimitStore().hit(key, windowMs, max, nowMs);
 }
 
-/** Progressive frame polls — high ceiling so motion never freezes mid-challenge. */
+/** Progressive frame polls - high ceiling so motion never freezes mid-challenge. */
 export async function checkFrameRateLimit(
   key: string,
   nowMs: number = Date.now(),

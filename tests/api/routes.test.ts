@@ -398,7 +398,7 @@ describe("API routes (Phase 3 protocol)", () => {
         cookie,
       ),
     );
-    // startedAt is now — too early
+    // startedAt is now - too early
     const response = await verifyChallenge(
       jsonRequest(
         "http://localhost/api/verify",

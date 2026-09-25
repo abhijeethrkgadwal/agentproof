@@ -126,7 +126,7 @@ export type GenerateChallengeOptions = {
   sessionId?: string;
   now?: Date;
   ttlMs?: number;
-  /** Deterministic seed helper for tests — when set, uses fixed required changes. */
+  /** Deterministic seed helper for tests - when set, uses fixed required changes. */
   requiredDirectionChanges?: number;
 };
 

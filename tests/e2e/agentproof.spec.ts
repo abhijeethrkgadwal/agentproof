@@ -16,8 +16,23 @@ test.describe("AgentProof e2e (Phase 3)", () => {
   test("landing and demo pages render", async ({ page }) => {
     await page.goto("/");
     await expect(page.getByRole("heading", { name: "AgentProof" })).toBeVisible();
-    await page.getByRole("link", { name: "Try Demo" }).click();
+    const demosCta = page.getByRole("link", { name: "Try the demos" });
+    await expect(demosCta).toHaveAttribute("href", "/demo");
+    await Promise.all([
+      page.waitForURL(/\/demo\/?$/),
+      demosCta.click(),
+    ]);
+    await expect(page.getByTestId("demo-link-drag-avoid")).toBeVisible({
+      timeout: 15_000,
+    });
     await expect(page.getByTestId("demo-link-temporal")).toBeVisible();
+    // Natural challenges first; temporal research last in the hub grid.
+    const hub = page.locator("[data-testid^='demo-link-']");
+    await expect(hub).toHaveCount(4);
+    await expect(hub.last()).toHaveAttribute(
+      "data-testid",
+      "demo-link-temporal",
+    );
     await page.getByTestId("demo-link-temporal").click();
     await expect(page.getByTestId("challenge-widget")).toBeVisible();
     await expect(page.getByTestId("start-challenge")).toBeVisible();
@@ -66,7 +81,7 @@ test.describe("AgentProof e2e (Phase 3)", () => {
     });
     expect(response.ok()).toBeTruthy();
     const body = await response.json();
-    // May be verified true by luck if object_1 is correct — assert shape only if false
+    // May be verified true by luck if object_1 is correct - assert shape only if false
     expect(typeof body.verified).toBe("boolean");
     if (!body.verified) {
       expect(body.reason).toBe("incorrect_answer");
@@ -124,7 +139,7 @@ test.describe("AgentProof e2e (Phase 3)", () => {
     const challenge = await createChallenge(request);
     expect(new Date(challenge.expiresAt).getTime()).toBeGreaterThan(Date.now());
     // Session-less verify must fail even if token is otherwise valid
-    // (Playwright APIRequestContext may or may not store cookies — assert security reject)
+    // (Playwright APIRequestContext may or may not store cookies - assert security reject)
     const response = await request.post("/api/verify", {
       headers: { cookie: "" },
       data: {

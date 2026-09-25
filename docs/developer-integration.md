@@ -50,4 +50,4 @@ See also `examples/integration.html`.
 | `memory` (default) | Process-local stores (dev/tests) |
 | `redis` | Challenge / session / rate-limit in Redis (`AGENTPROOF_REDIS_URL`) |
 
-Replay protection requires a shared store in multi-process deployments — use Redis.
+Replay protection requires a shared store in multi-process deployments - use Redis.

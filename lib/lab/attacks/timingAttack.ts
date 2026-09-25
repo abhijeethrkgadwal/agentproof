@@ -2,7 +2,7 @@ import { labPost, sleep, type HttpJar } from "@/lib/lab/attacks/http";
 import { computeAutomationCost, type AttackRunRecord } from "@/lib/lab/types";
 
 /**
- * C. Timing Attack — verify at different fractions of the active window.
+ * C. Timing Attack - verify at different fractions of the active window.
  * Measures whether early verification can bypass observation.
  */
 export async function runTimingAttack(options: {
@@ -75,7 +75,7 @@ export async function runTimingAttack(options: {
   }
 
   const solveTimeMs = Date.now() - t0;
-  // Success for THIS attack means bypassing observation early — that would be bad.
+  // Success for THIS attack means bypassing observation early - that would be bad.
   // We report success=true only if an early verify was accepted as verified.
   const success = anyEarlySuccess;
   return {

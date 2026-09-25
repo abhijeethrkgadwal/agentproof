@@ -6,9 +6,9 @@ Collect an honest **observational pilot** baseline of legitimate users solving A
 
 ## Labels (required)
 
-> Observational pilot — not a scientific human-performance study.
+> Observational pilot - not a scientific human-performance study.
 
-> Research/portfolio prototype — not production security infrastructure.
+> Research Prototype - not production security infrastructure.
 
 Do not use these results as product claims of human performance or “AI-proof” verification.
 
@@ -18,7 +18,7 @@ Do not use these results as product claims of human performance or “AI-proof�
 npm run study:recruit
 ```
 
-Produces `phase-8-recruitment-invite.md` + `phase-8-human-pilot-ops.json`. Target **30–50** voluntary participants; if fewer complete, report **honest N** (never fabricate).
+Produces `phase-8-recruitment-invite.md` + `phase-8-human-pilot-ops.json`. Target **30-50** voluntary participants; if fewer complete, report **honest N** (never fabricate).
 
 ## Flow (`/study`)
 
@@ -26,7 +26,7 @@ Produces `phase-8-recruitment-invite.md` + `phase-8-human-pilot-ops.json`. Targe
 2. Anonymous participant ID (alphanumeric / `_` / `-` only)
 3. Difficulty 1 challenge, then difficulty 2
 4. Optional accessibility-style list presentation
-5. Thank-you — no public individual results
+5. Thank-you - no public individual results
 
 ## Fields collected
 

@@ -1,5 +1,5 @@
 /**
- * Human Study — observational pilot types.
+ * Human Study - observational pilot types.
  * No PII: anonymous participantId only (no name/email/location/fingerprint).
  */
 
@@ -19,7 +19,7 @@ export type StudyAttempt = {
 };
 
 export type StudyAggregate = {
-  label: "Observational pilot — not a scientific human-performance study.";
+  label: "Observational pilot - not a scientific human-performance study.";
   participantCount: number;
   attempts: number;
   successRate: number;

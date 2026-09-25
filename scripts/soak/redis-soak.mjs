@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Phase 8 Redis soak — multi-process challenge/session/rate-limit verification.
+ * Phase 8 Redis soak - multi-process challenge/session/rate-limit verification.
  *
  * Usage:
  *   AGENTPROOF_REDIS_URL=redis://127.0.0.1:6379 node scripts/soak/redis-soak.mjs
@@ -256,7 +256,7 @@ async function main() {
   if (!ping.ok) {
     const report = {
       phase: 8,
-      label: "research/portfolio prototype — not production security infrastructure",
+      label: "research prototype - not production security infrastructure",
       startedAt,
       finishedAt: new Date().toISOString(),
       redisReachable: false,
@@ -344,7 +344,7 @@ async function main() {
 
   const report = {
     phase: 8,
-    label: "research/portfolio prototype — not production security infrastructure",
+    label: "research prototype - not production security infrastructure",
     startedAt,
     finishedAt: new Date().toISOString(),
     redisReachable: true,
@@ -371,7 +371,7 @@ async function main() {
     notes: [
       "Direct Redis store soak validates cross-process challenge/session/replay + distributed rate limiting.",
       "HTTP multi-instance requires SOAK_BASE_A/B pointing at two Redis-backed Next.js instances.",
-      "ioredis SET must use EX args (object form is a syntax error) — fixed in Phase 8.",
+      "ioredis SET must use EX args (object form is a syntax error) - fixed in Phase 8.",
     ],
   };
 

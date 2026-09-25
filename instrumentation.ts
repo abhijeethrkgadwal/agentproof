@@ -1,5 +1,5 @@
 /**
- * Next.js instrumentation — initialize storage backends on Node boot.
+ * Next.js instrumentation - initialize storage backends on Node boot.
  * Activates Redis ChallengeStore / SessionStore / RateLimitStore when
  * AGENTPROOF_STORAGE_BACKEND=redis and AGENTPROOF_REDIS_URL is set.
  */

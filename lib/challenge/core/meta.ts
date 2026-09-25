@@ -9,7 +9,7 @@ export const CHALLENGE_META: Record<ChallengeType, ChallengeModuleMeta> = {
   temporal: {
     type: "temporal",
     label: "Temporal (Research)",
-    shortDescription: "Original research challenge — observe direction changes.",
+    shortDescription: "Original research challenge - observe direction changes.",
     instructionDefault:
       "Select the object that changed direction the required times.",
     accessibility: {

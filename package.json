@@ -2,6 +2,13 @@
   "name": "agentproof",
   "version": "0.2.0",
   "private": true,
+  "license": "MIT",
+  "author": "Abhijeeth Gadwal",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/abhijeethrkgadwal/agentproof.git"
+  },
+  "homepage": "https://github.com/abhijeethrkgadwal/agentproof",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
