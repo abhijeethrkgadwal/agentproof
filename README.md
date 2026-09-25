@@ -2,6 +2,8 @@
 
 Adaptive verification for the agentic web.
 
+**New agents: start with [`docs/AGENT-HANDOFF.md`](docs/AGENT-HANDOFF.md).**
+
 **Research/portfolio prototype — not production security infrastructure.**
 
 AgentProof issues dynamic interaction challenges, keeps ground truth on the server, signs challenge + session metadata, prevents replay, and returns an explainable **interaction risk score** (`allow` / `step_up` / `restrict`).
