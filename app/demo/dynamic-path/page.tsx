@@ -1,7 +1,7 @@
 "use client";
 
-import Link from "next/link";
 import { useState } from "react";
+import { BrandLogo } from "@/components/brand/BrandLogo";
 import { NaturalChallengeShell } from "@/components/agentproof/NaturalChallengeShell";
 import { DynamicPathChallenge } from "@/components/agentproof/challenges/DynamicPathChallenge";
 
@@ -12,12 +12,7 @@ export default function DynamicPathDemoPage() {
       <div className="pointer-events-none absolute inset-0 ap-grid opacity-50" />
       <div className="relative mx-auto w-full max-w-4xl px-4 py-8 sm:px-6">
         <header className="mb-6 flex flex-wrap items-center justify-between gap-3 sm:mb-8">
-          <Link
-            href="/demo"
-            className="font-display text-xl text-slate-50 hover:text-cyan-300"
-          >
-            AgentProof
-          </Link>
+          <BrandLogo size="sm" href="/demo" />
           <div className="flex items-center gap-2 text-sm text-slate-400">
             <span>Difficulty</span>
             {([1, 2] as const).map((d) => (

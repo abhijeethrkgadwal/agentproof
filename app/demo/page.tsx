@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { BrandLogo } from "@/components/brand/BrandLogo";
 import { SITE } from "@/lib/site";
 
 const CHALLENGES = [
@@ -34,12 +35,7 @@ export default function DemoHubPage() {
       <div className="pointer-events-none absolute inset-0 ap-grid opacity-50" />
       <div className="relative mx-auto w-full max-w-4xl px-4 py-8 sm:px-6 sm:py-10">
         <header className="mb-8 flex flex-wrap items-center justify-between gap-3 sm:mb-10">
-          <Link
-            href="/"
-            className="font-display text-xl text-slate-50 hover:text-cyan-300"
-          >
-            AgentProof
-          </Link>
+          <BrandLogo size="sm" />
           <div className="flex items-center gap-3 text-xs text-slate-500 sm:text-sm">
             <a
               href={SITE.githubUrl}

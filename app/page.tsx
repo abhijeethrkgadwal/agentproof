@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { BrandLogo } from "@/components/brand/BrandLogo";
+import { SiteFooter, SiteHeader } from "@/components/brand/SiteChrome";
 import { SITE } from "@/lib/site";
 
 export default function HomePage() {
@@ -7,44 +9,23 @@ export default function HomePage() {
       <div className="pointer-events-none absolute inset-0 ap-grid opacity-70" />
       <div className="pointer-events-none absolute inset-0 ap-scanline" />
 
-      <header className="relative z-10 mx-auto flex w-full max-w-6xl items-center justify-between gap-4 px-4 py-5 sm:px-6 sm:py-6">
-        <span className="font-mono text-xs tracking-[0.28em] text-cyan-300/90 sm:text-sm sm:tracking-widest">
-          AGENTPROOF
-        </span>
-        <nav
-          className="flex flex-wrap items-center justify-end gap-x-4 gap-y-2 text-sm text-slate-400"
-          aria-label="Primary"
-        >
-          <Link href="/demo" className="hover:text-slate-100">
-            Demos
-          </Link>
-          <Link href="/lab" className="hover:text-slate-100">
-            Agent Lab
-          </Link>
-          <a href="#why" className="hidden hover:text-slate-100 sm:inline">
-            Why
-          </a>
-          <a href="#how" className="hidden hover:text-slate-100 sm:inline">
-            How it works
-          </a>
-          <a
-            href={SITE.githubUrl}
-            className="rounded border border-slate-700 px-2.5 py-1 text-slate-200 transition hover:border-cyan-500/50 hover:text-cyan-200"
-            rel="noreferrer"
-            target="_blank"
-          >
-            GitHub
-          </a>
-        </nav>
-      </header>
+      <SiteHeader
+        links={[
+          { href: "/demo", label: "Demos" },
+          { href: "/lab", label: "Agent Lab" },
+          { href: "#why", label: "Why", hideOnMobile: true },
+          { href: "#how", label: "How it works", hideOnMobile: true },
+        ]}
+      />
 
-      <section className="relative z-10 mx-auto flex w-full max-w-6xl flex-1 flex-col justify-center px-4 pb-16 pt-8 sm:px-6 sm:pb-24 sm:pt-10">
+      <section className="relative z-10 mx-auto flex w-full max-w-6xl flex-1 flex-col justify-center px-4 pb-16 pt-6 sm:px-6 sm:pb-24 sm:pt-8">
         <p className="ap-fade-up font-mono text-[11px] uppercase tracking-[0.28em] text-cyan-400/80 sm:text-xs sm:tracking-[0.35em]">
           Research prototype - open source
         </p>
-        <h1 className="ap-fade-up-delay font-display mt-3 max-w-3xl text-4xl leading-[1.05] text-slate-50 sm:mt-4 sm:text-6xl lg:text-7xl">
-          AgentProof
-        </h1>
+        <div className="ap-fade-up-delay mt-5 sm:mt-6">
+          <BrandLogo variant="stacked" href={null} priority className="block" />
+          <h1 className="sr-only">AgentProof</h1>
+        </div>
         <p className="ap-fade-up-delay-2 mt-5 max-w-2xl text-lg text-slate-200 sm:mt-6 sm:text-2xl">
           {SITE.tagline}
         </p>
@@ -247,48 +228,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      <footer className="relative z-10 border-t border-slate-800/80 px-4 py-8 sm:px-6">
-        <div className="mx-auto flex w-full max-w-6xl flex-col gap-4 text-sm text-slate-500 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <p className="text-slate-400">
-              Product &amp; Architecture by{" "}
-              <a
-                href={SITE.credit.github}
-                className="text-cyan-400 hover:underline"
-                rel="noreferrer"
-                target="_blank"
-              >
-                {SITE.credit.name}
-              </a>
-            </p>
-            <p className="mt-1 text-xs">
-              <a
-                href={SITE.credit.linkedin}
-                className="hover:text-slate-300"
-                rel="noreferrer"
-                target="_blank"
-              >
-                LinkedIn
-              </a>
-              {" · "}
-              <a
-                href={SITE.githubUrl}
-                className="hover:text-slate-300"
-                rel="noreferrer"
-                target="_blank"
-              >
-                {SITE.githubRepo}
-              </a>
-              {" · "}
-              MIT License
-            </p>
-          </div>
-          <p className="text-xs text-slate-600">
-            Research Prototype - not production security
-            infrastructure
-          </p>
-        </div>
-      </footer>
+      <SiteFooter />
     </main>
   );
 }

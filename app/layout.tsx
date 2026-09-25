@@ -24,6 +24,14 @@ export const metadata: Metadata = {
   title: "AgentProof - Make automated access expensive and detectable",
   description:
     "Open-source research prototype for adaptive interaction risk on the agentic web. Not AI-proof. Not production security infrastructure.",
+  icons: {
+    icon: [
+      { url: "/brand/favicon-32.png", sizes: "32x32", type: "image/png" },
+      { url: "/brand/icon-192.png", sizes: "192x192", type: "image/png" },
+    ],
+    apple: [{ url: "/brand/apple-touch-icon.png", sizes: "180x180" }],
+  },
+  manifest: "/brand/site.webmanifest",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { BrandLogo } from "@/components/brand/BrandLogo";
 import type {
   FrameResponse,
   ObjectPose,
@@ -235,17 +236,18 @@ export default function StudyPage() {
       <div className="pointer-events-none absolute inset-0 ap-grid opacity-40" />
       <div className="relative mx-auto max-w-3xl px-6 py-10 space-y-8">
         <header className="flex flex-wrap items-center justify-between gap-4">
-          <div>
+          <div className="space-y-3">
+            <BrandLogo size="sm" />
             <p className="font-mono text-xs tracking-[0.25em] text-cyan-400/80">
               HUMAN STUDY · PHASE 8
             </p>
-            <h1 className="font-display mt-1 text-3xl text-slate-50">
+            <h1 className="font-display text-3xl text-slate-50">
               Observational pilot
             </h1>
-            <p className="mt-2 text-sm text-slate-400">
+            <p className="text-sm text-slate-400">
               Observational pilot - not a scientific human-performance study.
             </p>
-            <p className="mt-1 text-xs text-amber-200/80">
+            <p className="text-xs text-amber-200/80">
               Research Prototype - not production security
               infrastructure. Target N 30-50; results report honest N only.
             </p>

@@ -15,7 +15,8 @@ async function createChallenge(request: APIRequestContext) {
 test.describe("AgentProof e2e (Phase 3)", () => {
   test("landing and demo pages render", async ({ page }) => {
     await page.goto("/");
-    await expect(page.getByRole("heading", { name: "AgentProof" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "AgentProof home" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "AgentProof" })).toBeAttached();
     const demosCta = page.getByRole("link", { name: "Try the demos" });
     await expect(demosCta).toHaveAttribute("href", "/demo");
     await Promise.all([

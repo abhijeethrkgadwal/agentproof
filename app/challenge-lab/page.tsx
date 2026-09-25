@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
+import { BrandLogo } from "@/components/brand/BrandLogo";
 import {
   ALL_CHALLENGE_TYPES,
   CHALLENGE_META,
@@ -59,9 +60,7 @@ export default function ChallengeLabPage() {
       <div className="pointer-events-none absolute inset-0 ap-grid opacity-40" />
       <div className="relative mx-auto w-full max-w-5xl px-6 py-10">
         <header className="mb-8 flex items-center justify-between">
-          <Link href="/demo" className="font-display text-xl text-slate-50">
-            AgentProof
-          </Link>
+          <BrandLogo size="sm" href="/demo" />
           <span className="font-mono text-xs text-slate-500">
             /challenge-lab · internal only
           </span>

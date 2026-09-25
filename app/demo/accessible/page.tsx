@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
+import { BrandLogo } from "@/components/brand/BrandLogo";
 import {
   VerificationResult,
   type VerificationPayload,
@@ -162,12 +163,15 @@ export default function AccessibleDemoPage() {
       <div className="pointer-events-none absolute inset-0 ap-grid opacity-40" />
       <div className="relative mx-auto max-w-2xl space-y-6">
         <header className="flex flex-wrap items-center justify-between gap-3">
-          <Link
-            href="/demo"
-            className="text-sm text-cyan-300 hover:text-cyan-200"
-          >
-            ← All challenges
-          </Link>
+          <div className="flex flex-wrap items-center gap-3">
+            <BrandLogo size="sm" href="/demo" />
+            <Link
+              href="/demo"
+              className="text-sm text-slate-400 hover:text-cyan-300"
+            >
+              All challenges
+            </Link>
+          </div>
           <span className="font-mono text-xs text-slate-500">
             Accessible · temporal · pilot
           </span>
