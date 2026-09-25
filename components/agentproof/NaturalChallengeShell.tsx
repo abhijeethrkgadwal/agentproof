@@ -286,16 +286,23 @@ export function NaturalChallengeShell({
           },
         }),
       });
-      const data = (await response.json()) as VerificationPayload & {
-        error?: string;
-      };
+      const raw = await response.text();
+      let data: (VerificationPayload & { error?: string }) | null = null;
+      try {
+        data = raw ? (JSON.parse(raw) as VerificationPayload & { error?: string }) : null;
+      } catch {
+        data = null;
+      }
       if (!response.ok) {
         const err =
-          data.error === "premature_submit"
+          data?.error === "premature_submit"
             ? "Too early - finish the goal or wait a bit longer."
-            : data.error === "rate_limited"
+            : data?.error === "rate_limited"
               ? "Too many requests - wait a second and verify again."
-              : (data.error ?? `HTTP ${response.status}`);
+              : (data?.error ??
+                (raw
+                  ? `HTTP ${response.status}`
+                  : `Server error (${response.status}) - empty response. If this is Vercel, ensure Redis is enabled and redeploy.`));
         setVerifyStatus("error");
         setResult({
           verified: false,
@@ -307,6 +314,19 @@ export function NaturalChallengeShell({
           error: err,
         });
         pushEvent("challenge_failed");
+        return;
+      }
+      if (!data) {
+        setVerifyStatus("error");
+        setResult({
+          verified: false,
+          decision: "restrict",
+          riskScore: 1,
+          confidence: 0.3,
+          band: "HIGH",
+          challengeId: challenge.challengeId,
+          error: "invalid_server_response",
+        });
         return;
       }
       setResult(data);

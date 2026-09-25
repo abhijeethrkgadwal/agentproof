@@ -192,11 +192,19 @@ export function sessionCookieHeader(
   maxAgeSec?: number,
 ): string {
   const ttl = maxAgeSec ?? Math.floor(getSessionTtlMs() / 1000);
-  return `${SESSION_COOKIE}=${encodeURIComponent(cookieValue)}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${ttl}`;
+  const secure =
+    Boolean(process.env.VERCEL) || process.env.NODE_ENV === "production"
+      ? "; Secure"
+      : "";
+  return `${SESSION_COOKIE}=${encodeURIComponent(cookieValue)}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${ttl}${secure}`;
 }
 
 export function clearSessionCookieHeader(): string {
-  return `${SESSION_COOKIE}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0`;
+  const secure =
+    Boolean(process.env.VERCEL) || process.env.NODE_ENV === "production"
+      ? "; Secure"
+      : "";
+  return `${SESSION_COOKIE}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0${secure}`;
 }
 
 /** Legacy helper kept for tests that only need an id. */

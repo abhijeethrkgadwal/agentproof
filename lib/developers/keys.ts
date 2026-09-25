@@ -1,10 +1,6 @@
-/**
- * Developer projects + API keys (Phase 7).
- * Keys are stored hashed; plaintext shown once at creation.
- */
 import { createHash, randomBytes, timingSafeEqual } from "crypto";
-import { mkdirSync, readFileSync, writeFileSync, existsSync } from "fs";
 import { join } from "path";
+import { readJsonFile, writeJsonFile } from "@/lib/storage/ephemeralFile";
 
 export type ProjectEnvironment = "test" | "live";
 
@@ -36,18 +32,12 @@ declare global {
 }
 
 function loadJson<T>(file: string, fallback: T): T {
-  mkdirSync(DATA_DIR, { recursive: true });
-  if (!existsSync(file)) return fallback;
-  try {
-    return JSON.parse(readFileSync(file, "utf8")) as T;
-  } catch {
-    return fallback;
-  }
+  const parsed = readJsonFile<T>(file);
+  return parsed ?? fallback;
 }
 
 function saveJson(file: string, data: unknown): void {
-  mkdirSync(DATA_DIR, { recursive: true });
-  writeFileSync(file, JSON.stringify(data, null, 2));
+  writeJsonFile(file, data);
 }
 
 function projects(): DeveloperProject[] {

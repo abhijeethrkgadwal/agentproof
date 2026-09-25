@@ -1,8 +1,8 @@
-import { mkdirSync, readFileSync, writeFileSync, existsSync } from "fs";
-import { join } from "path";
 import { randomUUID } from "crypto";
+import { join } from "path";
 import type { AttackerLevel, BenchmarkRow, LabRunRecord } from "@/lib/lab/types";
 import { median, p95, successRate } from "@/lib/lab/metrics";
+import { readJsonFile, writeJsonFile } from "@/lib/storage/ephemeralFile";
 
 const DATA_DIR = join(process.cwd(), "data", "lab-runs");
 const DATA_FILE = join(DATA_DIR, "runs.json");
@@ -12,27 +12,15 @@ declare global {
 }
 
 function ensureStore(): LabRunRecord[] {
-  mkdirSync(DATA_DIR, { recursive: true });
-  if (existsSync(DATA_FILE)) {
-    try {
-      const parsed = JSON.parse(readFileSync(DATA_FILE, "utf8")) as LabRunRecord[];
-      if (Array.isArray(parsed)) {
-        globalThis.__agentproofLabRuns = parsed;
-        return globalThis.__agentproofLabRuns;
-      }
-    } catch {
-      // fall through
-    }
-  }
   if (!globalThis.__agentproofLabRuns) {
-    globalThis.__agentproofLabRuns = [];
+    const fromDisk = readJsonFile<LabRunRecord[]>(DATA_FILE);
+    globalThis.__agentproofLabRuns = Array.isArray(fromDisk) ? fromDisk : [];
   }
   return globalThis.__agentproofLabRuns;
 }
 
 function persist(runs: LabRunRecord[]): void {
-  mkdirSync(DATA_DIR, { recursive: true });
-  writeFileSync(DATA_FILE, JSON.stringify(runs, null, 2));
+  writeJsonFile(DATA_FILE, runs);
 }
 
 export function listLabRuns(): LabRunRecord[] {
