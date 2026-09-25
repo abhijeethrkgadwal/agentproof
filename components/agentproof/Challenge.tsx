@@ -121,10 +121,12 @@ export function Challenge({
       if (!response.ok) {
         throw new Error(data.error ?? "Failed to start challenge");
       }
+      const now = Date.now();
+      const serverElapsed = Math.max(0, data.elapsedMs ?? 0);
       setPoses(data.poses);
-      setElapsedMs(data.elapsedMs);
+      setElapsedMs(serverElapsed);
       setComplete(data.complete);
-      setStartedAt(Date.now());
+      setStartedAt(now - serverElapsed);
       setLoadState("active");
       pushEvent("challenge_started");
     } catch (err) {
@@ -132,12 +134,29 @@ export function Challenge({
     }
   };
 
-  // Progressive frame polling while active (server clock)
+  // Wall-clock timer — avoids prod jitter from delayed frame elapsedMs.
+  useEffect(() => {
+    if (loadState !== "active" || startedAt === null) return;
+    const duration = challenge?.scene.durationMs ?? 0;
+    const tick = () => {
+      const wall = Date.now() - startedAt;
+      const capped = duration > 0 ? Math.min(wall, duration) : wall;
+      setElapsedMs(capped);
+      if (duration > 0 && wall >= duration) setComplete(true);
+    };
+    tick();
+    const id = window.setInterval(tick, 100);
+    return () => window.clearInterval(id);
+  }, [loadState, startedAt, challenge?.scene.durationMs]);
+
+  // Progressive frame polling while active (poses only)
   useEffect(() => {
     if (loadState !== "active" || !challenge || complete) return;
 
     let cancelled = false;
+    let pollGeneration = 0;
     const poll = async () => {
+      const generation = ++pollGeneration;
       try {
         const response = await fetch("/api/challenge/frame", {
           method: "POST",
@@ -148,11 +167,10 @@ export function Challenge({
             token: challenge.token,
           }),
         });
-        if (!response.ok || cancelled) return;
+        if (!response.ok || cancelled || generation !== pollGeneration) return;
         const data = (await response.json()) as FrameResponse;
-        if (cancelled) return;
+        if (cancelled || generation !== pollGeneration) return;
         setPoses(data.poses);
-        setElapsedMs(data.elapsedMs);
         if (data.complete) setComplete(true);
       } catch {
         // ignore transient poll errors

@@ -1,7 +1,7 @@
-import { mkdirSync, readFileSync, writeFileSync, existsSync } from "fs";
-import { join } from "path";
 import { randomUUID } from "crypto";
+import { join } from "path";
 import type { StudyAttempt } from "@/lib/study/types";
+import { readJsonFile, writeJsonFile } from "@/lib/storage/ephemeralFile";
 
 const DATA_DIR = join(process.cwd(), "data", "study");
 const DATA_FILE = join(DATA_DIR, "attempts.json");
@@ -11,27 +11,17 @@ declare global {
 }
 
 function ensureStore(): StudyAttempt[] {
-  mkdirSync(DATA_DIR, { recursive: true });
-  if (existsSync(DATA_FILE)) {
-    try {
-      const parsed = JSON.parse(readFileSync(DATA_FILE, "utf8")) as StudyAttempt[];
-      if (Array.isArray(parsed)) {
-        globalThis.__agentproofStudyAttempts = parsed;
-        return globalThis.__agentproofStudyAttempts;
-      }
-    } catch {
-      // fall through
-    }
-  }
   if (!globalThis.__agentproofStudyAttempts) {
-    globalThis.__agentproofStudyAttempts = [];
+    const fromDisk = readJsonFile<StudyAttempt[]>(DATA_FILE);
+    globalThis.__agentproofStudyAttempts = Array.isArray(fromDisk)
+      ? fromDisk
+      : [];
   }
   return globalThis.__agentproofStudyAttempts;
 }
 
 function persist(rows: StudyAttempt[]): void {
-  mkdirSync(DATA_DIR, { recursive: true });
-  writeFileSync(DATA_FILE, JSON.stringify(rows, null, 2));
+  writeJsonFile(DATA_FILE, rows);
 }
 
 export function appendStudyAttempt(

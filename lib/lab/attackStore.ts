@@ -1,7 +1,7 @@
-import { mkdirSync, readFileSync, writeFileSync, existsSync } from "fs";
-import { join } from "path";
 import { randomUUID } from "crypto";
+import { join } from "path";
 import type { AttackRunRecord } from "@/lib/lab/types";
+import { readJsonFile, writeJsonFile } from "@/lib/storage/ephemeralFile";
 
 const DATA_DIR = join(process.cwd(), "data", "lab-runs");
 const DATA_FILE = join(DATA_DIR, "attack-runs.json");
@@ -11,27 +11,15 @@ declare global {
 }
 
 function ensureStore(): AttackRunRecord[] {
-  mkdirSync(DATA_DIR, { recursive: true });
-  if (existsSync(DATA_FILE)) {
-    try {
-      const parsed = JSON.parse(readFileSync(DATA_FILE, "utf8")) as AttackRunRecord[];
-      if (Array.isArray(parsed)) {
-        globalThis.__agentproofAttackRuns = parsed;
-        return globalThis.__agentproofAttackRuns;
-      }
-    } catch {
-      // fall through
-    }
-  }
   if (!globalThis.__agentproofAttackRuns) {
-    globalThis.__agentproofAttackRuns = [];
+    const fromDisk = readJsonFile<AttackRunRecord[]>(DATA_FILE);
+    globalThis.__agentproofAttackRuns = Array.isArray(fromDisk) ? fromDisk : [];
   }
   return globalThis.__agentproofAttackRuns;
 }
 
 function persist(rows: AttackRunRecord[]): void {
-  mkdirSync(DATA_DIR, { recursive: true });
-  writeFileSync(DATA_FILE, JSON.stringify(rows, null, 2));
+  writeJsonFile(DATA_FILE, rows);
 }
 
 export function appendAttackRun(
