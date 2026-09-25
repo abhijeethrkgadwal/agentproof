@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
+import { BrandLogo } from "@/components/brand/BrandLogo";
 import type { AttackRunRecord, BenchmarkRow, LabRunRecord } from "@/lib/lab/types";
 import type { StudyAggregate } from "@/lib/study/types";
 
@@ -112,14 +113,15 @@ export default function LabPage() {
       <div className="pointer-events-none absolute inset-0 ap-grid opacity-40" />
       <div className="relative mx-auto max-w-6xl px-6 py-8 space-y-10">
         <header className="flex flex-wrap items-center justify-between gap-4">
-          <div>
+          <div className="space-y-3">
+            <BrandLogo size="sm" />
             <p className="font-mono text-xs tracking-[0.25em] text-cyan-400/80">
               AGENT LAB · v0.2
             </p>
-            <h1 className="font-display mt-1 text-3xl text-slate-50">
+            <h1 className="font-display text-3xl text-slate-50">
               Human baseline & automation cost
             </h1>
-            <p className="mt-2 max-w-2xl text-sm text-slate-400">
+            <p className="max-w-2xl text-sm text-slate-400">
               Challenge types: temporal, drag_avoid, physical, dynamic_path.
               Historical temporal Lab V2 A-F unchanged. Natural-challenge
               attackers are placeholders only - no fake benchmarks. Automation

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { BrandLogo } from "@/components/brand/BrandLogo";
 import { Challenge } from "@/components/agentproof/Challenge";
 import { SITE } from "@/lib/site";
 
@@ -8,12 +9,7 @@ export default function TemporalDemoPage() {
       <div className="pointer-events-none absolute inset-0 ap-grid opacity-50" />
       <div className="relative mx-auto w-full max-w-4xl px-4 py-8 sm:px-6">
         <header className="mb-6 flex flex-wrap items-center justify-between gap-3 sm:mb-8">
-          <Link
-            href="/demo"
-            className="font-display text-xl text-slate-50 hover:text-cyan-300"
-          >
-            AgentProof
-          </Link>
+          <BrandLogo size="sm" href="/demo" />
           <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500 sm:text-sm">
             <Link href="/demo/accessible" className="hover:text-cyan-300">
               Prefer keyboard / list?
