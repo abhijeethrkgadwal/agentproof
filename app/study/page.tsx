@@ -66,7 +66,7 @@ type Phase =
   | "between"
   | "done";
 
-const CONSENT_TEXT = `You are joining an observational pilot of AgentProof interaction challenges.
+const CONSENT_TEXT = `You are joining an observational pilot of AgentProof's temporal research challenge (difficulty 1, then difficulty 2).
 
 We collect only an anonymous participant ID you choose, plus challenge outcome metrics (success/failure, timing, retries, interaction counts, frames observed, whether you used the accessibility path).
 
@@ -240,13 +240,18 @@ export default function StudyPage() {
           <div className="space-y-3">
             <BrandLogo size="sm" />
             <p className="font-mono text-xs tracking-[0.25em] text-cyan-400/80">
-              HUMAN STUDY · PHASE 8
+              OBSERVATIONAL PILOT
             </p>
             <h1 className="font-display text-3xl text-slate-50">
               Observational pilot
             </h1>
             <p className="text-sm text-slate-400">
-              Observational pilot - not a scientific human-performance study.
+              Temporal research challenge only - not a scientific
+              human-performance study. Natural demos live under{" "}
+              <Link href="/demo" className="text-cyan-400 hover:underline">
+                /demo
+              </Link>
+              .
             </p>
             <p className="text-xs text-amber-200/80">
               Research Prototype - not production security

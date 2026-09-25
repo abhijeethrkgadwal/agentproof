@@ -1,5 +1,5 @@
 /**
- * Minimal embeddable AgentProof browser SDK (Phase 7).
+ * Minimal embeddable AgentProof browser SDK (research prototype).
  * Usage:
  *   const ap = AgentProof.create({ baseUrl, apiKey? });
  *   const challenge = await ap.createChallenge({ difficulty: 1 });

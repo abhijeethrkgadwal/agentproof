@@ -425,8 +425,13 @@ export function NaturalChallengeShell({
           {loadState === "issued" ? (
             <div className="flex flex-col items-start gap-4 rounded-md border border-slate-800 bg-slate-950/50 p-6">
               <p className="text-slate-300">
-                Challenge issued. Obstacle / gate motion is revealed only after
-                you start - future trajectories stay on the server.
+                {challengeType === "drag_avoid"
+                  ? "Challenge issued. Obstacle motion is revealed only after you start - future trajectories stay on the server."
+                  : challengeType === "dynamic_path"
+                    ? "Challenge issued. Gate openings are revealed only after you start - future schedules stay on the server."
+                    : challengeType === "physical"
+                      ? "Challenge issued. Protected bounds stay on the server - only the live scene is shown after you start."
+                      : "Challenge issued. Ground truth stays on the server - live poses appear after you start."}
               </p>
               {challenge.accessibilityHint ? (
                 <p className="text-xs text-slate-500">{challenge.accessibilityHint}</p>

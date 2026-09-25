@@ -122,7 +122,7 @@ export default function HomePage() {
               {
                 step: "04",
                 title: "Decide",
-                body: "An explainable risk score returns allow, step up, or restrict - a signal, not a human probability.",
+                body: "Challenge-aware rules return allow, step up, or restrict - an interaction risk signal, not a human probability.",
               },
             ].map((item) => (
               <li
@@ -197,6 +197,7 @@ export default function HomePage() {
             </li>
             <li className="border-l-2 border-amber-500/40 pl-4">
               Risk score = explainable interaction risk, not “% human”
+              (thresholds differ for temporal vs natural challenges)
             </li>
             <li className="border-l-2 border-amber-500/40 pl-4">
               MIT-licensed - fork it, break it, improve it

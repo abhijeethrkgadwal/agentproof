@@ -59,7 +59,7 @@ export function VerificationResult({
           {result.reason ? ` (${result.reason})` : ""}
         </p>
         <span className="font-mono text-xs text-slate-500">
-          confidence {result.confidence.toFixed(2)}
+          decision confidence {result.confidence.toFixed(2)}
         </span>
       </div>
       <RiskIndicator
